@@ -1,0 +1,1380 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Território Digital · Igeotecnologia</title>
+<meta name="description" content="Território Digital: aerolevantamento com drones, LiDAR, georreferenciamento, monitoramento ambiental, WebGIS e inteligência geoespacial para a Amazônia. Por Igeotecnologia — Manaus/AM.">
+<meta name="theme-color" content="#050d18">
+<meta property="og:title" content="Território Digital · Igeotecnologia">
+<meta property="og:description" content="O território amazônico, traduzido em dados. Projetos, soluções, dados e publicações em geotecnologia.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="postagens/_web/mapeamento-lidar.webp">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23050d18'/%3E%3Cpath d='M32 10 L50 52 L32 42 L14 52 Z' fill='none' stroke='%231ea7ff' stroke-width='4' stroke-linejoin='round'/%3E%3Ccircle cx='32' cy='33' r='4' fill='%2336d6c3'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+/* ============ DESIGN TOKENS ============ */
+:root{
+  --bg:#050d18; --bg-2:#071322; --surface:#0b1a2c; --surface-2:#10243a; --surface-3:#163049;
+  --line:rgba(138,190,255,.13); --line-strong:rgba(138,190,255,.26);
+  --text:#e9f2fb; --text-2:#b9cadc; --muted:#7f97b1;
+  --accent:#1ea7ff; --accent-hi:#5cc0ff; --accent-ink:#021220;
+  --data:#36d6c3; --agent:#86e07f; --forest:#3fa36b; --sand:#d9b47d; --alert:#ff8a5c;
+  --font-display:"Archivo",system-ui,sans-serif;
+  --font-body:"IBM Plex Sans",system-ui,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,monospace;
+  --s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:24px;--s6:32px;--s7:48px;--s8:64px;--s9:96px;--s10:128px;
+  --r-sm:6px;--r-md:12px;--r-lg:20px;--r-xl:28px;
+  --shadow:0 24px 60px -24px rgba(0,0,0,.65);
+  --wrap:1240px; --gutter:clamp(16px,4vw,40px);
+  --ease:cubic-bezier(.2,.7,.2,1);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ color-scheme:dark; } }
+:root[data-theme="dark"]{ color-scheme:dark; }
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:16px;line-height:1.6;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+.wrap{max-width:var(--wrap);margin:0 auto;padding:0 var(--gutter)}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ============ TYPE ============ */
+.eyebrow{font-family:var(--font-mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--data);display:inline-flex;align-items:center;gap:10px}
+.eyebrow::before{content:"";width:28px;height:1px;background:currentColor}
+h1,h2,h3{font-family:var(--font-display);font-weight:800;line-height:1.02;letter-spacing:-.01em}
+h1{font-size:clamp(42px,7.4vw,104px);font-variation-settings:"wdth" 112}
+h2{font-size:clamp(32px,4.6vw,60px);font-variation-settings:"wdth" 108}
+h3{font-size:20px;font-variation-settings:"wdth" 100;font-weight:700;line-height:1.2}
+.lead{font-size:clamp(17px,1.6vw,20px);color:var(--text-2);max-width:62ch}
+.hl{color:var(--accent)}
+.mono{font-family:var(--font-mono)}
+
+/* ============ BUTTONS ============ */
+.btn{background:transparent;display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:48px;padding:0 22px;border-radius:999px;font-weight:600;font-size:15px;border:1px solid transparent;cursor:pointer;transition:transform .2s var(--ease),background .2s,border-color .2s,color .2s;white-space:nowrap}
+.btn svg{width:18px;height:18px}
+.btn-primary{background:var(--accent);color:var(--accent-ink)}
+.btn-primary:hover{background:var(--accent-hi);transform:translateY(-1px)}
+.btn-ghost{border-color:var(--line-strong);color:var(--text)}
+.btn-ghost:hover{border-color:var(--text-2);background:rgba(255,255,255,.04)}
+.btn-sm{min-height:40px;padding:0 16px;font-size:14px}
+
+/* ============ HEADER ============ */
+.site-header{position:fixed;inset:0 0 auto 0;z-index:50;transition:background .3s,border-color .3s,backdrop-filter .3s;border-bottom:1px solid transparent}
+.site-header.scrolled{background:rgba(5,13,24,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-color:var(--line)}
+.nav{display:flex;align-items:center;justify-content:space-between;height:72px;gap:var(--s5)}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mark{width:36px;height:36px;flex:none}
+.brand-txt{white-space:nowrap;display:flex;flex-direction:column;line-height:1}
+.brand-txt b{font-family:var(--font-display);font-weight:800;font-size:17px;letter-spacing:.02em;font-variation-settings:"wdth" 118;text-transform:uppercase}
+.brand-txt small{font-family:var(--font-mono);font-size:10px;letter-spacing:.16em;color:var(--muted);text-transform:uppercase;margin-top:4px}
+.nav-links{display:flex;gap:4px;list-style:none}
+.nav-links a{white-space:nowrap;padding:8px 10px;border-radius:999px;font-size:14px;color:var(--text-2);transition:color .2s,background .2s}
+.nav-links a:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.nav-cta{display:flex;gap:10px;align-items:center}
+.menu-btn{display:none;width:44px;height:44px;border-radius:12px;border:1px solid var(--line-strong);background:transparent;cursor:pointer;align-items:center;justify-content:center}
+.menu-btn span{display:block;width:18px;height:2px;background:var(--text);position:relative}
+.menu-btn span::before,.menu-btn span::after{content:"";position:absolute;left:0;width:18px;height:2px;background:var(--text);transition:transform .25s}
+.menu-btn span::before{top:-6px}.menu-btn span::after{top:6px}
+@media (max-width:1200px){
+  .nav-links{position:fixed;top:72px;left:0;right:0;flex-direction:column;padding:var(--s4) var(--gutter) var(--s6);background:rgba(5,13,24,.97);border-bottom:1px solid var(--line);transform:translateY(-8px);opacity:0;pointer-events:none;transition:.25s var(--ease)}
+  .nav-links a{display:block;padding:14px 4px;font-size:17px;border-radius:0;border-bottom:1px solid var(--line)}
+  .site-header.open .nav-links{transform:none;opacity:1;pointer-events:auto}
+  .site-header.open{background:rgba(5,13,24,.97)}
+  .menu-btn{display:inline-flex}
+  .nav-cta .btn-ghost{display:none}
+}
+@media (max-width:480px){ .nav-cta .btn-primary{display:none} }
+
+/* ============ HERO ============ */
+.hero{position:relative;min-height:100svh;display:flex;align-items:center;padding:120px 0 72px;overflow:hidden;isolation:isolate}
+#topo{position:absolute;inset:0;width:100%;height:100%;z-index:-2}
+.hero::after{content:"";position:absolute;inset:0;z-index:-1;background:
+  radial-gradient(60% 70% at 18% 45%,rgba(5,13,24,.92),rgba(5,13,24,.35) 70%,transparent),
+  linear-gradient(180deg,rgba(5,13,24,.2),transparent 30%,transparent 70%,var(--bg));pointer-events:none}
+.hero-grid{display:grid;grid-template-columns:1.25fr .9fr;gap:var(--s7);align-items:center}
+.hero h1 .line{display:block}
+.hero h1 .thin{font-weight:300;font-variation-settings:"wdth" 125;font-size:.42em;letter-spacing:.14em;text-transform:uppercase;color:var(--text-2);display:block;margin-bottom:.5em}
+.hero .lead{margin:var(--s5) 0 var(--s6)}
+.hero-actions{display:flex;flex-wrap:wrap;gap:12px}
+.hero-meta{display:flex;flex-wrap:wrap;gap:var(--s5) var(--s6);margin-top:var(--s7);padding-top:var(--s5);border-top:1px solid var(--line)}
+.hero-meta div{display:flex;flex-direction:column}
+.hero-meta b{font-family:var(--font-display);font-size:28px;font-weight:700;font-variation-settings:"wdth" 110;line-height:1}
+.hero-meta span{font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+
+.stack{position:relative;height:540px}
+.stack a{position:absolute;width:62%;border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--line-strong);transition:transform .5s var(--ease),z-index 0s;background:var(--surface)}
+.stack a img{width:100%;aspect-ratio:4/5;object-fit:cover;object-position:top}
+.stack a:nth-child(1){left:0;top:40px;transform:rotate(-6deg);z-index:1}
+.stack a:nth-child(2){left:19%;top:0;transform:rotate(1deg);z-index:3}
+.stack a:nth-child(3){right:0;top:70px;transform:rotate(7deg);z-index:2}
+.stack a:hover{transform:rotate(0) translateY(-10px) scale(1.03);z-index:5}
+.stack-label{position:absolute;bottom:-6px;left:0;right:0;text-align:center;font-family:var(--font-mono);font-size:11px;letter-spacing:.16em;color:var(--muted);text-transform:uppercase}
+
+.hud{position:absolute;left:var(--gutter);bottom:22px;display:flex;gap:18px;flex-wrap:wrap;font-family:var(--font-mono);font-size:11px;color:var(--muted);letter-spacing:.06em;z-index:2}
+.hud span b{color:var(--data);font-weight:500}
+.north{position:absolute;right:var(--gutter);top:96px;display:flex;flex-direction:column;align-items:center;gap:4px;font-family:var(--font-mono);font-size:11px;color:var(--muted);z-index:2}
+.north svg{width:18px;height:28px}
+
+@media (max-width:960px){
+  .hero-grid{grid-template-columns:1fr}
+  .stack{height:360px;max-width:440px;width:100%;margin:0 auto}
+  .hud .opt{display:none}
+}
+
+/* ============ TICKER ============ */
+.ticker{border-block:1px solid var(--line);background:var(--bg-2);overflow:hidden;padding:18px 0}
+.ticker-track{display:flex;gap:48px;width:max-content;animation:tick 48s linear infinite}
+.ticker span{font-family:var(--font-display);font-variation-settings:"wdth" 120;font-weight:600;font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-2);display:inline-flex;align-items:center;gap:48px;white-space:nowrap}
+.ticker span::after{content:"◆";color:var(--accent);font-size:9px}
+@keyframes tick{to{transform:translateX(-50%)}}
+
+/* ============ SECTIONS ============ */
+section{position:relative}
+.sec{padding:clamp(72px,10vw,128px) 0}
+.sec-head{display:grid;grid-template-columns:1fr 1fr;gap:var(--s6);align-items:end;margin-bottom:var(--s8)}
+.sec-head h2{margin-top:var(--s4)}
+.sec-head p{color:var(--text-2);max-width:52ch;justify-self:end}
+@media (max-width:860px){.sec-head{grid-template-columns:1fr}.sec-head p{justify-self:start}}
+
+/* services */
+.services{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
+.svc{background:var(--bg);padding:var(--s6) var(--s5);display:flex;flex-direction:column;gap:var(--s3);min-height:260px;position:relative;transition:background .3s}
+.svc:hover{background:var(--surface)}
+.svc .ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:rgba(30,167,255,.1);color:var(--accent);margin-bottom:var(--s3)}
+.svc .ic svg{width:22px;height:22px}
+.svc .num{position:absolute;top:var(--s5);right:var(--s5);font-family:var(--font-mono);font-size:11px;color:var(--muted)}
+.svc p{color:var(--muted);font-size:14.5px;line-height:1.55}
+.svc ul{list-style:none;display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;padding-top:var(--s3)}
+.svc li{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.04em;padding:3px 8px;border:1px solid var(--line-strong);border-radius:999px;color:var(--text-2)}
+@media (max-width:1080px){.services{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:560px){.services{grid-template-columns:1fr}.svc{min-height:0}}
+
+/* feed */
+.feed-bar{display:flex;flex-wrap:wrap;gap:var(--s3);justify-content:space-between;align-items:center;margin-bottom:var(--s6)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:38px;padding:0 16px;border-radius:999px;border:1px solid var(--line-strong);background:transparent;font-size:14px;color:var(--text-2);cursor:pointer;transition:.2s}
+.chip:hover{color:var(--text);border-color:var(--text-2)}
+.chip[aria-pressed="true"]{background:var(--text);color:var(--bg);border-color:var(--text)}
+.chip sup{font-family:var(--font-mono);font-size:10px;margin-left:4px;opacity:.7}
+.search{position:relative;min-width:260px}
+.search input{width:100%;min-height:42px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface);padding:0 16px 0 40px;font-size:15px}
+.search svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--muted)}
+@media (max-width:640px){.search{min-width:0;width:100%}}
+
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s5)}
+.card{display:flex;flex-direction:column;border-radius:var(--r-lg);overflow:hidden;background:var(--surface);border:1px solid var(--line);cursor:pointer;text-align:left;transition:transform .35s var(--ease),border-color .3s;padding:0}
+.card:hover{transform:translateY(-4px);border-color:var(--line-strong)}
+.card .media{position:relative;overflow:hidden;aspect-ratio:4/4.2;background:var(--surface-2)}
+.card .media img{width:100%;height:100%;object-fit:cover;object-position:top;transition:transform .8s var(--ease)}
+.card:hover .media img{transform:scale(1.05)}
+.card .cat{position:absolute;left:14px;top:14px;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;padding:5px 10px;border-radius:999px;background:rgba(5,13,24,.78);backdrop-filter:blur(6px);border:1px solid var(--line-strong)}
+.card .body{padding:var(--s5);display:flex;flex-direction:column;gap:var(--s2);flex:1}
+.card .meta{display:flex;flex-wrap:wrap;gap:4px 12px;font-family:var(--font-mono);font-size:11px;color:var(--muted);letter-spacing:.04em}
+.card .meta span{white-space:nowrap}
+.card p{color:var(--muted);font-size:14.5px}
+.card .more{margin-top:auto;padding-top:var(--s3);font-size:14px;font-weight:600;color:var(--accent);display:inline-flex;gap:6px;align-items:center}
+.card.feat{grid-column:span 2;flex-direction:row}
+.card.feat .media{flex:1.15;aspect-ratio:auto;min-height:440px}
+.card.feat .media img{object-position:center top}
+.card.feat .body{flex:1;padding:var(--s7) var(--s6);justify-content:center}
+.card.feat h3{font-size:clamp(24px,2.6vw,34px);line-height:1.08}
+.card.feat .badge{align-self:flex-start;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-ink);background:var(--data);padding:4px 10px;border-radius:999px;margin-bottom:var(--s2)}
+.empty{grid-column:1/-1;text-align:center;padding:var(--s8);color:var(--muted);border:1px dashed var(--line-strong);border-radius:var(--r-lg)}
+@media (max-width:1020px){.grid{grid-template-columns:repeat(2,1fr)}.card.feat{grid-column:span 2}}
+@media (max-width:640px){.grid{grid-template-columns:1fr}.card.feat{grid-column:auto;flex-direction:column}.card.feat .media{min-height:0;aspect-ratio:4/4.2}.card.feat .body{padding:var(--s5)}}
+
+/* atlas */
+.atlas{display:grid;grid-template-columns:1fr 2fr;gap:var(--s5);align-items:stretch}
+.atlas-side{display:flex;flex-direction:column;gap:var(--s3)}
+.atlas-item{display:flex;gap:14px;align-items:flex-start;padding:var(--s4);border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface);cursor:pointer;text-align:left;transition:.2s;width:100%}
+.atlas-item:hover,.atlas-item.on{border-color:var(--accent);background:var(--surface-2)}
+.atlas-item img{width:54px;height:54px;border-radius:8px;object-fit:cover;object-position:top;flex:none}
+.atlas-item b{display:block;font-size:14.5px;line-height:1.3}
+.atlas-item span{font-family:var(--font-mono);font-size:11px;color:var(--muted)}
+#map{min-height:520px;border-radius:var(--r-lg);border:1px solid var(--line-strong);overflow:hidden;background:#0a1520}
+.leaflet-container{font-family:var(--font-body);background:#0a1520}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--surface-2);color:var(--text);border:1px solid var(--line-strong)}
+.leaflet-popup-content{margin:12px 14px;font-size:13.5px}
+.leaflet-popup-content b{display:block;font-size:14px;margin-bottom:4px}
+.leaflet-popup-content a{color:var(--accent);font-weight:600}
+.leaflet-control-attribution{background:rgba(5,13,24,.7)!important;color:var(--muted)!important}
+.leaflet-control-attribution a{color:var(--text-2)!important}
+.leaflet-bar a,.leaflet-control-layers{background:var(--surface-2)!important;color:var(--text)!important;border-color:var(--line-strong)!important}
+.pin{width:18px;height:18px;border-radius:50%;background:var(--accent);border:3px solid #fff;box-shadow:0 0 0 6px rgba(30,167,255,.25),0 0 24px rgba(30,167,255,.8)}
+.pin.base{background:var(--data);box-shadow:0 0 0 6px rgba(54,214,195,.25),0 0 24px rgba(54,214,195,.7)}
+@media (max-width:900px){.atlas{grid-template-columns:1fr}#map{min-height:380px;order:-1}}
+
+/* data hub */
+.hub{background:linear-gradient(180deg,var(--bg),var(--bg-2) 30%,var(--bg-2) 70%,var(--bg))}
+.datasets{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s4)}
+.ds{border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--s5);background:var(--surface);display:flex;flex-direction:column;gap:var(--s3);position:relative;overflow:hidden}
+.ds::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:var(--c,var(--accent))}
+.ds header{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--s3)}
+.ds .fmt{display:flex;flex-wrap:wrap;gap:6px}
+.ds .fmt span{font-family:var(--font-mono);font-size:10.5px;padding:2px 7px;border-radius:4px;background:var(--surface-3);color:var(--text-2)}
+.ds p{color:var(--muted);font-size:14.5px}
+.status{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;padding:4px 9px;border-radius:999px;border:1px solid}
+.status.ok{color:var(--data);border-color:rgba(54,214,195,.4)}
+.status.soon{color:var(--sand);border-color:rgba(217,180,125,.4)}
+.ds .req{margin-top:auto;font-size:14px;font-weight:600;color:var(--accent);background:none;border:0;cursor:pointer;text-align:left;padding:var(--s2) 0 0;display:inline-flex;gap:6px}
+.hub-cta{margin-top:var(--s6);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--s5);padding:var(--s6);border-radius:var(--r-xl);border:1px solid var(--line-strong);background:radial-gradient(120% 140% at 0% 0%,rgba(30,167,255,.16),transparent 55%),var(--surface)}
+.hub-cta h3{font-size:clamp(22px,2.4vw,30px);max-width:24ch}
+@media (max-width:1020px){.datasets{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:640px){.datasets{grid-template-columns:1fr}}
+
+/* lab */
+.lab{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s4)}
+.lab-card{padding:var(--s5);border-radius:var(--r-lg);border:1px solid var(--line);background:var(--bg-2);display:flex;flex-direction:column;gap:var(--s3)}
+.lab-card code{font-family:var(--font-mono);font-size:12px;color:var(--data);background:rgba(54,214,195,.08);padding:8px 10px;border-radius:8px;display:block;white-space:pre;overflow:hidden;text-overflow:ellipsis}
+.lab-card p{color:var(--muted);font-size:14.5px}
+@media (max-width:1020px){.lab{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:560px){.lab{grid-template-columns:1fr}}
+
+/* method */
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:0;counter-reset:st;border-top:1px solid var(--line)}
+.step{padding:var(--s6) var(--s5) var(--s5) 0;position:relative}
+.step::before{counter-increment:st;content:"0" counter(st);font-family:var(--font-mono);font-size:12px;color:var(--accent);display:block;margin-bottom:var(--s5)}
+.step::after{content:"";position:absolute;top:-4px;left:0;width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.step p{color:var(--muted);font-size:14.5px;margin-top:var(--s2);max-width:30ch}
+@media (max-width:860px){.steps{grid-template-columns:1fr 1fr;row-gap:var(--s4)}}
+@media (max-width:520px){.steps{grid-template-columns:1fr}}
+
+/* credentials */
+.creds{display:grid;grid-template-columns:1.1fr 1fr;gap:var(--s7);align-items:start}
+.cred-list{display:grid;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
+.cred{background:var(--bg);padding:var(--s4) var(--s5);display:flex;justify-content:space-between;gap:var(--s4);align-items:center}
+.cred span{color:var(--text-2);font-size:15px}
+.cred b{font-family:var(--font-mono);font-size:12px;font-weight:500;color:var(--muted);text-align:right}
+.norms{display:flex;flex-wrap:wrap;gap:8px;margin-top:var(--s5)}
+.norms span{font-family:var(--font-mono);font-size:12px;padding:6px 12px;border-radius:999px;border:1px solid var(--line-strong);color:var(--text-2)}
+.quote{font-family:var(--font-display);font-variation-settings:"wdth" 90;font-weight:400;font-style:italic;font-size:clamp(22px,2.4vw,30px);line-height:1.3;color:var(--text);margin-top:var(--s6);padding-left:var(--s5);border-left:2px solid var(--accent)}
+@media (max-width:900px){.creds{grid-template-columns:1fr}}
+
+/* forms (agenda + contato) */
+.panel{border:1px solid var(--line-strong);border-radius:var(--r-xl);background:var(--surface);padding:clamp(20px,4vw,48px)}
+.book{display:grid;grid-template-columns:1fr 1.25fr;gap:var(--s7)}
+.types{display:grid;gap:10px;margin-top:var(--s5)}
+.type{display:flex;gap:14px;align-items:flex-start;padding:var(--s4);border-radius:var(--r-md);border:1px solid var(--line-strong);cursor:pointer;transition:.2s;background:var(--bg-2)}
+.type:hover{border-color:var(--text-2)}
+.type input{position:absolute;opacity:0;pointer-events:none}
+.type .dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--muted);flex:none;margin-top:3px;display:grid;place-items:center}
+.type b{display:block;font-size:15px}
+.type small{color:var(--muted);font-size:13.5px}
+.type:has(input:checked){border-color:var(--accent);background:rgba(30,167,255,.07)}
+.type:has(input:checked) .dot{border-color:var(--accent)}
+.type:has(input:checked) .dot::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.type:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:13.5px;font-weight:500;color:var(--text-2)}
+.field input,.field select,.field textarea{min-height:48px;border-radius:var(--r-md);border:1px solid var(--line-strong);background:var(--bg-2);padding:12px 14px;font-size:16px;width:100%;transition:border-color .2s}
+.field textarea{min-height:120px;resize:vertical}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent)}
+.field .err{font-size:12.5px;color:var(--alert);min-height:0}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:var(--s4)}
+.form{display:grid;gap:var(--s4)}
+.slots{display:flex;flex-wrap:wrap;gap:8px}
+.slot{min-height:42px;min-width:76px;border-radius:10px;border:1px solid var(--line-strong);background:var(--bg-2);font-family:var(--font-mono);font-size:14px;cursor:pointer;transition:.15s}
+.slot:hover{border-color:var(--text-2)}
+.slot[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:500}
+.note{font-size:13px;color:var(--muted)}
+.ok-box{display:none;border:1px solid rgba(54,214,195,.45);background:rgba(54,214,195,.08);border-radius:var(--r-md);padding:var(--s4);font-size:14.5px}
+.ok-box.show{display:block}
+.ok-box a{color:var(--data);font-weight:600;text-decoration:underline}
+.agenda-embed{width:100%;min-height:640px;border:0;border-radius:var(--r-md);background:#fff}
+@media (max-width:900px){.book{grid-template-columns:1fr}.row{grid-template-columns:1fr}}
+
+.contact{display:grid;grid-template-columns:1fr 1.25fr;gap:var(--s7)}
+.channels{display:grid;gap:10px;margin-top:var(--s5)}
+.channel{display:flex;gap:14px;align-items:center;padding:var(--s4);border-radius:var(--r-md);border:1px solid var(--line);background:var(--bg-2);transition:.2s}
+.channel:hover{border-color:var(--accent)}
+.channel .ic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:rgba(30,167,255,.1);color:var(--accent);flex:none}
+.channel .ic svg{width:20px;height:20px}
+.channel small{display:block;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.channel b{font-weight:500;font-size:15px;word-break:break-word}
+@media (max-width:900px){.contact{grid-template-columns:1fr}}
+
+/* footer */
+.site-footer{border-top:1px solid var(--line);padding:var(--s8) 0 var(--s6);background:var(--bg-2)}
+.foot{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:var(--s6)}
+.foot h4{font-family:var(--font-mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:500;margin-bottom:var(--s4)}
+.foot ul{list-style:none;display:grid;gap:10px}
+.foot a{color:var(--text-2);font-size:14.5px}
+.foot a:hover{color:var(--text)}
+.foot p{color:var(--muted);font-size:14px;margin-top:var(--s4);max-width:36ch}
+.legal{margin-top:var(--s7);padding-top:var(--s5);border-top:1px solid var(--line);display:flex;flex-wrap:wrap;justify-content:space-between;gap:var(--s3);font-family:var(--font-mono);font-size:11.5px;color:var(--muted)}
+@media (max-width:860px){.foot{grid-template-columns:1fr 1fr}}
+@media (max-width:520px){.foot{grid-template-columns:1fr}}
+
+/* modal */
+dialog.reader{border:0;padding:0;background:transparent;max-width:min(1180px,calc(100vw - 24px));width:100%;max-height:calc(100dvh - 24px);margin:auto;color:var(--text)}
+dialog.reader::backdrop{background:rgba(2,8,16,.82);backdrop-filter:blur(6px)}
+.reader-in{display:grid;grid-template-columns:1.1fr 1fr;background:var(--surface);border:1px solid var(--line-strong);border-radius:var(--r-xl);overflow:hidden;max-height:calc(100dvh - 24px)}
+.reader-img{background:#02070e;overflow:auto;max-height:calc(100dvh - 24px)}
+.reader-img img{width:100%}
+.reader-txt{padding:clamp(20px,3.5vw,44px);overflow:auto;max-height:calc(100dvh - 24px);display:flex;flex-direction:column;gap:var(--s4)}
+.reader-txt h2{font-size:clamp(26px,3vw,40px)}
+.reader-txt p{color:var(--text-2)}
+.reader-tags{display:flex;flex-wrap:wrap;gap:6px}
+.reader-tags span{font-family:var(--font-mono);font-size:11px;padding:4px 10px;border-radius:999px;border:1px solid var(--line-strong);color:var(--text-2)}
+.reader-close{position:absolute;top:14px;right:14px;width:44px;height:44px;border-radius:50%;border:1px solid var(--line-strong);background:rgba(5,13,24,.85);cursor:pointer;display:grid;place-items:center;z-index:2}
+.reader-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:auto;padding-top:var(--s4);border-top:1px solid var(--line)}
+@media (max-width:860px){.reader-in{grid-template-columns:1fr;overflow:auto}.reader-img,.reader-txt{max-height:none;overflow:visible}}
+
+/* whatsapp float */
+.wa-float{position:fixed;right:18px;bottom:18px;z-index:40;width:56px;height:56px;border-radius:50%;background:#25d366;color:#04140a;display:grid;place-items:center;box-shadow:0 12px 30px -8px rgba(37,211,102,.6);transition:transform .2s}
+.wa-float:hover{transform:scale(1.06)}
+.wa-float svg{width:28px;height:28px}
+
+
+/* areas carousel */
+.areas-wrap{position:relative}
+.areas{display:grid;grid-auto-flow:column;grid-auto-columns:clamp(260px,30%,380px);gap:var(--s4);overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding-bottom:4px;margin:0 calc(var(--gutter)*-1);padding-inline:var(--gutter);scroll-padding-inline:var(--gutter)}
+.areas::-webkit-scrollbar{display:none}
+.area{scroll-snap-align:start;position:relative;aspect-ratio:3/4;border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--line);cursor:pointer;text-align:left;padding:0;background:var(--surface-2);isolation:isolate}
+.area img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;transition:transform 1s var(--ease)}
+.area::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(5,13,24,.1) 30%,rgba(5,13,24,.95) 85%)}
+.area:hover img{transform:scale(1.06)}
+.area .in{position:absolute;left:0;right:0;bottom:0;padding:var(--s5);display:flex;flex-direction:column;gap:var(--s2)}
+.area small{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--data)}
+.area b{font-family:var(--font-display);font-variation-settings:"wdth" 104;font-size:24px;line-height:1.1;font-weight:700}
+.area span.go{font-size:14px;color:var(--text-2);display:flex;justify-content:space-between;align-items:center;margin-top:var(--s2);padding-top:var(--s3);border-top:1px solid var(--line-strong)}
+.area.alt{background:radial-gradient(120% 90% at 20% 10%,rgba(30,167,255,.25),transparent 60%),repeating-radial-gradient(circle at 70% 40%,transparent 0 18px,rgba(120,180,255,.09) 18px 19px),var(--surface)}
+.car-nav{display:flex;gap:10px}
+.at-side{justify-self:end;display:flex;flex-direction:column;gap:20px;align-items:flex-end}.at-side p{text-align:right}
+@media (max-width:860px){.at-side{justify-self:start;align-items:flex-start}.at-side p{text-align:left}}
+.car-nav button{width:48px;height:48px;border-radius:50%;border:1px solid var(--line-strong);background:transparent;cursor:pointer;display:grid;place-items:center;transition:.2s}
+.car-nav button:hover{border-color:var(--text)}
+.car-nav button:disabled{opacity:.3;cursor:default}
+
+/* indicadores */
+.stats-band{border-block:1px solid var(--line);background:radial-gradient(80% 140% at 100% 0%,rgba(54,214,195,.10),transparent 60%),var(--bg-2)}
+.stats-grid{display:grid;grid-template-columns:1fr 2fr;gap:var(--s7);align-items:center}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
+.stat{background:var(--bg-2);padding:var(--s6) var(--s5)}
+.stat b{display:block;font-family:var(--font-display);font-variation-settings:"wdth" 112;font-weight:800;font-size:clamp(44px,5.4vw,76px);line-height:.95;letter-spacing:-.02em}
+.stat b sup{font-size:.4em;color:var(--data);vertical-align:top;margin-left:2px}
+.stat > span{display:block;margin-top:var(--s3);font-size:14px;color:var(--text-2);line-height:1.4}
+.src{margin-top:var(--s4);font-family:var(--font-mono);font-size:11.5px;color:var(--muted);line-height:1.6}
+.src a,.src button{color:var(--accent);background:none;border:0;cursor:pointer;font:inherit;padding:0;text-decoration:underline}
+@media (max-width:1020px){.stats-grid{grid-template-columns:1fr}}
+@media (max-width:640px){.stats{grid-template-columns:1fr 1fr}.stat{padding:var(--s5) var(--s4)}}
+
+/* vitrine */
+.vitrine{display:grid;grid-template-columns:1fr 1fr;gap:var(--s4);margin-bottom:var(--s6)}
+.win{border-radius:var(--r-lg);border:1px solid var(--line-strong);background:var(--surface);overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column}
+.win:first-child{grid-column:1/-1}
+.win-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);font-family:var(--font-mono);font-size:11px;color:var(--muted)}
+.win-bar i{width:9px;height:9px;border-radius:50%;background:var(--surface-3);display:inline-block}
+.win-bar em{font-style:normal;margin-left:8px;color:var(--text-2)}
+.win-view{flex:none;background-color:#02070e;background-repeat:no-repeat}
+.win-cap{padding:var(--s4) var(--s5);display:flex;justify-content:space-between;gap:var(--s4);align-items:baseline;border-top:1px solid var(--line)}
+.win-cap b{font-size:15px}
+.win-cap span{font-family:var(--font-mono);font-size:11px;color:var(--muted);text-align:right}
+@media (max-width:860px){.vitrine{grid-template-columns:1fr}}
+
+
+/* ===== agêntico ===== */
+.agent-sec{background:radial-gradient(60% 50% at 80% 0%,rgba(134,224,127,.10),transparent 70%),radial-gradient(50% 40% at 0% 100%,rgba(30,167,255,.10),transparent 70%),var(--bg)}
+.agent-sec .eyebrow{color:var(--agent)}
+.ag-hl{color:var(--agent)}
+.vs{display:grid;grid-template-columns:1fr auto 1fr;gap:var(--s4);align-items:stretch;margin-bottom:var(--s7)}
+.vs-card{border-radius:var(--r-lg);padding:var(--s6);border:1px solid var(--line-strong);background:var(--surface)}
+.vs-card small{font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.vs-card h3{margin:10px 0 8px}
+.vs-card p{color:var(--text-2);font-size:15px}
+.vs-card.new{border-color:rgba(134,224,127,.45);background:linear-gradient(160deg,rgba(134,224,127,.10),transparent 60%),var(--surface)}
+.vs-card.new small{color:var(--agent)}
+.vs-mid{display:grid;place-items:center;font-family:var(--font-display);font-weight:800;font-size:28px;color:var(--muted)}
+.agents{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s4)}
+.agent{border-radius:var(--r-lg);padding:var(--s5);border:1px solid var(--line);background:var(--bg-2);display:flex;flex-direction:column;gap:var(--s3);position:relative;overflow:hidden}
+.agent::after{content:"";position:absolute;right:-30px;top:-30px;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,var(--c) 0,transparent 70%);opacity:.18}
+.agent .ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent)}
+.agent ul{list-style:none;display:grid;gap:6px}
+.agent li{font-size:14px;color:var(--text-2);padding-left:16px;position:relative}
+.agent li::before{content:"";position:absolute;left:0;top:9px;width:6px;height:6px;border-radius:50%;background:var(--c)}
+.agent.wide{grid-column:span 4;flex-direction:row;align-items:center;gap:var(--s6)}
+.agent.wide ul{grid-template-columns:repeat(3,auto);gap:6px 28px}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--agent);box-shadow:0 0 0 0 rgba(134,224,127,.6);animation:pulse 2s infinite;display:inline-block;margin-right:8px}
+@keyframes pulse{70%{box-shadow:0 0 0 10px rgba(134,224,127,0)}100%{box-shadow:0 0 0 0 rgba(134,224,127,0)}}
+.practice{margin-top:var(--s7);display:grid;grid-template-columns:1fr 1.6fr 1fr;gap:var(--s5);align-items:center;padding:var(--s6);border-radius:var(--r-xl);border:1px solid var(--line-strong);background:var(--surface)}
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;counter-reset:fl}
+.flow div{position:relative;padding:var(--s4) var(--s3);border-radius:var(--r-md);background:var(--bg-2);border:1px solid var(--line);font-size:13.5px;color:var(--text-2);text-align:center}
+.flow div::before{counter-increment:fl;content:counter(fl);display:block;font-family:var(--font-mono);font-size:11px;color:var(--agent);margin-bottom:6px}
+.reco{border-left:2px solid var(--agent);padding-left:var(--s4);font-size:15px;color:var(--text)}
+.reco small{display:block;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.14em;color:var(--agent);text-transform:uppercase;margin-bottom:6px}
+.reco em{display:block;margin-top:8px;font-style:normal;font-size:12px;color:var(--muted)}
+.infra{margin-top:var(--s5);display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.infra span{font-family:var(--font-mono);font-size:12px;padding:7px 12px;border-radius:999px;border:1px solid var(--line-strong);color:var(--text-2)}
+.ag-cta{margin-top:var(--s6);display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.btn-agent{background:var(--agent);color:#06210a}
+.btn-agent:hover{background:#a3ef9c;transform:translateY(-1px)}
+@media (max-width:1020px){.agents{grid-template-columns:repeat(2,1fr)}.agent.wide{grid-column:span 2;flex-direction:column;align-items:flex-start}.agent.wide ul{grid-template-columns:1fr}.practice{grid-template-columns:1fr}}
+@media (max-width:640px){.vs{grid-template-columns:1fr}.vs-mid{padding:4px 0}.agents{grid-template-columns:1fr}.agent.wide{grid-column:auto}.flow{grid-template-columns:1fr 1fr}}
+
+/* ===== hub de dados públicos ===== */
+.hub-gov{display:grid;grid-template-columns:1fr 360px;gap:var(--s6);align-items:start}
+.src-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--s3)}
+.srcc{border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface);padding:var(--s4) var(--s5);display:flex;flex-direction:column;gap:8px;transition:border-color .2s}
+.srcc.on{border-color:var(--data);background:linear-gradient(160deg,rgba(54,214,195,.07),transparent 60%),var(--surface)}
+.srcc .org{display:flex;justify-content:space-between;align-items:center;gap:8px;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--data)}
+.srcc .org span:last-child{color:var(--muted);letter-spacing:.04em}
+.srcc h3{font-size:16.5px}
+.srcc p{font-size:13.5px;color:var(--muted);line-height:1.5}
+.srcc .tip{font-size:12.5px;color:var(--text-2);border-left:2px solid var(--line-strong);padding-left:10px}
+.srcc .fmt{display:flex;flex-wrap:wrap;gap:5px}
+.srcc .fmt span{font-family:var(--font-mono);font-size:10px;padding:2px 7px;border-radius:4px;background:var(--surface-3);color:var(--text-2)}
+.srcc .act{display:flex;gap:8px;margin-top:auto;padding-top:6px}
+.srcc .act a,.srcc .act button{min-height:36px;padding:0 12px;border-radius:999px;font-size:13px;font-weight:600;border:1px solid var(--line-strong);background:transparent;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.srcc .act a{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.srcc .act button[aria-pressed="true"]{border-color:var(--data);color:var(--data)}
+.side{position:sticky;top:88px;display:grid;gap:var(--s4)}
+.box{border:1px solid var(--line-strong);border-radius:var(--r-lg);background:var(--surface);padding:var(--s5)}
+.box h3{font-size:17px;display:flex;justify-content:space-between;align-items:center}
+.box h3 small{font-family:var(--font-mono);font-size:11px;color:var(--muted);font-weight:400}
+.box .hint{font-size:13px;color:var(--muted);margin-top:6px}
+.cite{margin-top:var(--s3);font-family:var(--font-mono);font-size:11.5px;line-height:1.6;color:var(--text-2);background:var(--bg-2);border:1px solid var(--line);border-radius:var(--r-sm);padding:12px;white-space:pre-wrap;max-height:220px;overflow:auto}
+.box .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:var(--s3)}
+.box .row2 input{min-height:42px;border-radius:10px;border:1px solid var(--line-strong);background:var(--bg-2);padding:0 10px;font-family:var(--font-mono);font-size:14px;width:100%}
+.box .row2 label{font-size:11px;font-family:var(--font-mono);color:var(--muted);display:grid;gap:4px}
+.utm-out{margin-top:var(--s3);display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.utm-out div{background:var(--bg-2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.utm-out small{display:block;font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.utm-out b{font-family:var(--font-mono);font-weight:500;font-size:14px;color:var(--data)}
+.check{list-style:none;display:grid;gap:4px;margin-top:var(--s3)}
+.check label{display:flex;gap:10px;align-items:center;font-size:13.5px;color:var(--text-2);cursor:pointer;min-height:30px}
+.check input{width:18px;height:18px;accent-color:var(--data)}
+.bar{height:4px;border-radius:4px;background:var(--surface-3);margin-top:10px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--data);width:0;transition:width .3s}
+.mini-btns{display:flex;gap:8px;margin-top:var(--s3);flex-wrap:wrap}
+@media (max-width:1100px){.hub-gov{grid-template-columns:1fr}.side{position:static;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}}
+@media (max-width:640px){.src-grid{grid-template-columns:1fr}}
+
+/* ===== parceiros ===== */
+.partners{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s4)}
+.partner{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface);padding:var(--s5);display:flex;flex-direction:column;gap:var(--s3)}
+.partner .lg{font-family:var(--font-display);font-variation-settings:"wdth" 118;font-weight:800;font-size:22px;letter-spacing:.01em;line-height:1}
+.partner .lg small{display:block;font-family:var(--font-mono);font-weight:400;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+.partner p{font-size:14px;color:var(--muted)}
+.partner .links{margin-top:auto;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13.5px}
+.partner .links a,.partner .links button{color:var(--accent);background:none;border:0;cursor:pointer;font:inherit;font-weight:600;padding:0}
+.partner.me{border-color:rgba(30,167,255,.45)}
+@media (max-width:1020px){.partners{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:560px){.partners{grid-template-columns:1fr}}
+
+/* reveal */
+.rv{opacity:0;transform:translateY(24px);transition:opacity .9s var(--ease),transform .9s var(--ease)}
+.rv.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .rv{opacity:1;transform:none;transition:none}
+  .ticker-track{animation:none}
+  *{transition-duration:0s!important}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ HEADER ============ -->
+<header class="site-header" id="top">
+  <nav class="nav wrap" aria-label="Principal">
+    <a href="#top" class="brand" aria-label="Território Digital — início">
+      <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+        <rect x=".5" y=".5" width="39" height="39" rx="10" fill="#0b1a2c" stroke="rgba(138,190,255,.3)"/>
+        <path d="M20 7 L31 32 L20 26 L9 32 Z" fill="none" stroke="#1ea7ff" stroke-width="2.4" stroke-linejoin="round"/>
+        <circle cx="20" cy="20.5" r="2.6" fill="#36d6c3"/>
+      </svg>
+      <span class="brand-txt"><b>Território Digital</b><small>por Igeotecnologia</small></span>
+    </a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#atuacao">Atuação</a></li>
+      <li><a href="#projetos">Projetos</a></li>
+      <li><a href="#agentico">Agêntico</a></li>
+      <li><a href="#hub">Hub de dados</a></li>
+      <li><a href="#lab">Lab</a></li>
+      <li><a href="#sobre">Sobre</a></li>
+      <li><a href="#contato">Contato</a></li>
+    </ul>
+    <div class="nav-cta">
+      <a href="#contato" class="btn btn-ghost btn-sm">Falar conosco</a>
+      <a href="#agenda" class="btn btn-primary btn-sm">Agendar conversa</a>
+      <button class="menu-btn" id="menuBtn" aria-label="Abrir menu" aria-expanded="false" aria-controls="navLinks"><span></span></button>
+    </div>
+  </nav>
+</header>
+
+<main>
+<!-- ============ HERO ============ -->
+<section class="hero" aria-label="Apresentação">
+  <canvas id="topo" aria-hidden="true"></canvas>
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">Geotecnologia · Amazônia · Manaus/AM</span>
+      <h1 style="margin-top:22px">
+        <span class="line thin">Território Digital</span>
+        <span class="line">O território</span>
+        <span class="line">amazônico,</span>
+        <span class="line"><span class="hl">em dados.</span></span>
+      </h1>
+      <p class="lead">Aerolevantamento com drones, LiDAR, georreferenciamento e inteligência geoespacial para quem decide sobre a Amazônia — da gestão pública ao campo, da floresta à cidade.</p>
+      <div class="hero-actions">
+        <a href="#agenda" class="btn btn-primary">Agendar conversa técnica
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        <a href="#projetos" class="btn btn-ghost">Ver projetos e publicações</a>
+      </div>
+      <div class="hero-meta">
+        <div><b id="mPosts">—</b><span>publicações</span></div>
+        <div><b>800+ ha</b><span>LiDAR em um só projeto</span></div>
+        <div><b>SIRGAS</b><span>2000 · alta precisão</span></div>
+        <div><b>CREA</b><span>AM 19.430</span></div>
+      </div>
+    </div>
+    <div class="stack" id="stack" aria-label="Últimas publicações"></div>
+  </div>
+  <div class="hud" aria-hidden="true">
+    <span>LAT <b id="hLat">-3.1190</b></span>
+    <span>LON <b id="hLon">-60.0217</b></span>
+    <span class="opt">DATUM <b>SIRGAS 2000</b></span>
+    <span class="opt">EQUIDISTÂNCIA <b>5 m</b></span>
+  </div>
+  <div class="north" aria-hidden="true">
+    <svg viewBox="0 0 18 28"><path d="M9 0 L17 26 L9 20 L1 26 Z" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M9 0 L9 20 L1 26 Z" fill="currentColor"/></svg>N
+  </div>
+</section>
+
+<!-- ============ TICKER ============ -->
+<div class="ticker" aria-hidden="true">
+  <div class="ticker-track" id="ticker"></div>
+</div>
+
+<!-- ============ ÁREAS DE ATUAÇÃO ============ -->
+<section class="sec" id="atuacao" aria-labelledby="t-at">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div><span class="eyebrow">Áreas de atuação</span><h2 id="t-at">Conheça o território.<br><span class="hl">Decida com segurança.</span></h2></div>
+      <div class="at-side">
+        <p>Cada território tem uma pergunta. Escolha a sua e veja como já respondemos em campo.</p>
+        <div class="car-nav"><button id="carPrev" aria-label="Anterior"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg></button><button id="carNext" aria-label="Próximo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></button></div>
+      </div>
+    </div>
+    <div class="areas-wrap rv"><div class="areas" id="areas"></div></div>
+  </div>
+</section>
+
+<!-- ============ INDICADORES ============ -->
+<section class="sec stats-band" aria-labelledby="t-ind">
+  <div class="wrap stats-grid">
+    <div class="rv">
+      <span class="eyebrow">Dados que viram decisão</span>
+      <h2 id="t-ind" style="margin-top:16px;font-size:clamp(30px,3.6vw,48px)">Um voo de drone.<br>Uma escola planejada.</h2>
+      <p class="src" id="indSrc"></p>
+    </div>
+    <div class="stats rv" id="stats"></div>
+  </div>
+</section>
+
+<!-- ============ SOLUÇÕES ============ -->
+<section class="sec" id="solucoes" aria-labelledby="t-sol">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div><span class="eyebrow">Soluções</span><h2 id="t-sol">Do campo à<br>decisão.</h2></div>
+      <p>Integramos coleta em campo, processamento e análise para entregar informação territorial confiável — com responsabilidade técnica, normas vigentes e linguagem que o gestor entende.</p>
+    </div>
+    <div class="services rv" id="services"></div>
+  </div>
+</section>
+
+<!-- ============ PROJETOS / FEED ============ -->
+<section class="sec" id="projetos" aria-labelledby="t-proj" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div><span class="eyebrow">Projetos &amp; publicações</span><h2 id="t-proj">O que estamos<br>mapeando.</h2></div>
+      <p>Projetos executados, artigos, soluções, software e novidades. Cada publicação é um recorte real do território — atualizado continuamente.</p>
+    </div>
+    <div class="feed-bar rv">
+      <div class="chips" id="chips" role="group" aria-label="Filtrar por categoria"></div>
+      <label class="search"><span class="sr-only">Buscar publicações</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="search" id="q" placeholder="Buscar: LiDAR, estiagem, ribeirinhas…">
+      </label>
+    </div>
+    <div class="grid" id="grid" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- ============ ATLAS ============ -->
+<section class="sec" id="atlas" aria-labelledby="t-atlas" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div><span class="eyebrow">Atlas</span><h2 id="t-atlas">Onde o trabalho<br>acontece.</h2></div>
+      <p>Cada publicação georreferenciada aparece no mapa. Um atlas vivo da atuação no território amazônico.</p>
+    </div>
+    <div class="atlas rv">
+      <div class="atlas-side" id="atlasList"></div>
+      <div id="map" role="region" aria-label="Mapa de projetos"></div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============ TERRITÓRIO AGÊNTICO ============ -->
+<section class="sec agent-sec" id="agentico" aria-labelledby="t-ag2">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div><span class="eyebrow">Território Agêntico</span><h2 id="t-ag2">Governo Territorial<br><span class="ag-hl">Agêntico.</span></h2></div>
+      <p>Um modelo de gestão pública em que <b>agentes de inteligência artificial</b> trabalham continuamente sobre dados territoriais para compreender o território, antecipar demandas, apoiar decisões e recomendar ações de maior benefício para a população.</p>
+    </div>
+    <div class="vs rv">
+      <div class="vs-card"><small>Modelo tradicional</small><h3>Ação reativa</h3><p>O governo observa o território apenas quando surge um problema. Resposta tardia, fragmentada entre secretarias.</p></div>
+      <div class="vs-mid">VS</div>
+      <div class="vs-card new"><small><span class="pulse"></span>Governo territorial agêntico</small><h3>Ação preditiva</h3><p>Agentes digitais observam continuamente, antecipam demandas e recomendam ações antes mesmo da solicitação. Integrada e inteligente.</p></div>
+    </div>
+    <div class="agents rv" id="agents"></div>
+    <div class="practice rv">
+      <div><span class="eyebrow">Exemplo na prática</span><p style="margin-top:12px;color:var(--text-2);font-size:15px">Em vez de esperar que uma escola informe falta de vagas, o agente identifica o padrão e antecipa a decisão.</p></div>
+      <div class="flow"><div>Novo conjunto habitacional em construção</div><div>Aumento de crianças em idade escolar</div><div>Escolas próximas no limite da capacidade</div><div>Terreno público disponível</div></div>
+      <div class="reco"><small>Recomendação do agente</small>“Uma escola nesta localização atenderá ≈1.200 futuros estudantes e reduzirá o deslocamento médio em 18 minutos.”<em>Exemplo ilustrativo do conceito.</em></div>
+    </div>
+    <div class="infra rv"><span>Organização territorial dos dados</span><span>GeoPackage como base estruturada</span><span>WebGIS</span><span>Drones e aerofotogrametria</span><span>Demanda e capacidade escolar</span><span>Cadastro fundiário</span><span>Rotas escolares</span><span>Integração de bases entre órgãos</span></div>
+    <div class="ag-cta rv">
+      <button class="btn btn-agent" data-open="territorio-agentico">Ler o conceito completo</button>
+      <button class="btn btn-ghost" data-req="Software / WebGIS / IA">Levar para o meu município</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HUB DE DADOS PÚBLICOS ============ -->
+<section class="sec" id="hub" aria-labelledby="t-hub">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div><span class="eyebrow">Hub de dados públicos</span><h2 id="t-hub">Dados oficiais,<br><span class="hl">prontos para a prancha.</span></h2></div>
+      <p>As principais fontes governamentais de dados geoespaciais, organizadas por tema, com formato e dica de uso. Monte a lista de fontes do seu mapa, gere a citação pronta e confira o sistema de referência no kit cartográfico.</p>
+    </div>
+    <div class="feed-bar rv">
+      <div class="chips" id="hubChips" role="group" aria-label="Filtrar fontes por tema"></div>
+      <label class="search"><span class="sr-only">Buscar fontes</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="search" id="hubQ" placeholder="Buscar: limites, CAR, hidrografia, Sentinel…">
+      </label>
+    </div>
+    <div class="hub-gov">
+      <div class="src-grid" id="srcGrid" aria-live="polite"></div>
+      <aside class="side" aria-label="Ferramentas cartográficas">
+        <div class="box">
+          <h3>Minha prancha <small id="pCount">0 fontes</small></h3>
+          <p class="hint">Marque “+ Prancha” nas fontes que usou. O texto de fontes do mapa é montado aqui.</p>
+          <div class="cite" id="pCite">Nenhuma fonte selecionada.</div>
+          <div class="mini-btns"><button class="btn btn-primary btn-sm" id="pCopy">Copiar texto</button><button class="btn btn-ghost btn-sm" id="pClear">Limpar</button></div>
+        </div>
+        <div class="box">
+          <h3>Kit cartográfico <small>SIRGAS 2000</small></h3>
+          <p class="hint">Coordenada geográfica → fuso UTM, EPSG e coordenadas planas.</p>
+          <div class="row2"><label>Latitude<input id="uLat" inputmode="decimal" value="-3.1190"></label><label>Longitude<input id="uLon" inputmode="decimal" value="-60.0217"></label></div>
+          <div class="utm-out" id="uOut"></div>
+        </div>
+        <div class="box">
+          <h3>Checklist do mapa <small id="cCount">0/10</small></h3>
+          <ul class="check" id="check"></ul>
+          <div class="bar"><i id="cBar"></i></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DADOS ============ -->
+<section class="sec hub" id="dados" aria-labelledby="t-dados">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div><span class="eyebrow">Acervo próprio</span><h2 id="t-dados">Território Digital<br><span class="hl">Amazônico.</span></h2></div>
+      <p>Além dos dados públicos, um acervo em construção de bases geoespaciais levantadas em campo na Amazônia para pesquisadores, consultores, órgãos públicos e empresas. Solicite acesso, licenciamento ou produtos sob demanda.</p>
+    </div>
+    <div class="datasets rv" id="datasets"></div>
+    <div class="hub-cta rv">
+      <h3>Precisa de um dado que ainda não existe? <span class="hl">A gente vai a campo.</span></h3>
+      <div class="hero-actions">
+        <button class="btn btn-primary" data-req="Produto sob demanda">Solicitar dados sob demanda</button>
+        <a href="#agenda" class="btn btn-ghost">Agendar demonstração</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LAB ============ -->
+<section class="sec" id="lab" aria-labelledby="t-lab">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div><span class="eyebrow">Lab · software &amp; IA</span><h2 id="t-lab">Geotecnologia<br>que vira produto.</h2></div>
+      <p>Desenvolvemos ferramentas que colocam o dado espacial nas mãos de quem decide: WebGIS, painéis, automações e modelos de IA aplicados à imagem e ao território.</p>
+    </div>
+    <div class="vitrine rv" id="vitrine"></div>
+    <div class="lab rv" id="labGrid"></div>
+  </div>
+</section>
+
+<!-- ============ MÉTODO ============ -->
+<section class="sec" aria-labelledby="t-met" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div><span class="eyebrow">Método</span><h2 id="t-met">Como entregamos.</h2></div>
+      <p>Um fluxo rastreável, do planejamento de voo ao relatório técnico assinado.</p>
+    </div>
+    <div class="steps rv">
+      <div class="step"><h3>Diagnóstico</h3><p>Escopo, área de interesse, precisão exigida, normas aplicáveis e plano de voo/campo.</p></div>
+      <div class="step"><h3>Campo</h3><p>Voo com drone RTK/LiDAR, pontos de apoio GNSS, rastreamento e coleta em áreas remotas.</p></div>
+      <div class="step"><h3>Processamento</h3><p>Ortomosaicos, nuvens de pontos, MDT/MDS, vetorização e controle de qualidade posicional.</p></div>
+      <div class="step"><h3>Entrega</h3><p>Relatórios, peças técnicas, bases SIG, WebGIS e painéis prontos para decisão.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CREDENCIAIS ============ -->
+<section class="sec" id="sobre" aria-labelledby="t-cred" style="padding-top:0">
+  <div class="wrap creds">
+    <div class="rv">
+      <span class="eyebrow">Credenciais</span>
+      <h2 id="t-cred" style="margin-top:16px">Responsabilidade<br>técnica.</h2>
+      <p class="lead" style="margin-top:20px">Equipe liderada por geógrafo e geomensor com atuação em gestão pública, perícia judicial e aerolevantamento na Amazônia.</p>
+      <div class="norms">
+        <span>SIRGAS 2000</span><span>Norma Técnica INCRA · SIGEF</span><span>ABNT NBR 13.133</span><span>REURB · Lei 13.465/2017</span><span>ANAC · DECEA</span><span>INDE · ET-EDGV</span>
+      </div>
+      <p class="quote">“Conhecer o território para construir soluções reais.”</p>
+    </div>
+    <div class="cred-list rv">
+      <div class="cred"><span>Geógrafo e Geomensor</span><b>CREA-AM 19.430</b></div>
+      <div class="cred"><span>Perito Judicial Nomeado (Ad Hoc)</span><b>TJAM</b></div>
+      <div class="cred"><span>Piloto profissional de RPAS</span><b>Drone · LiDAR</b></div>
+      <div class="cred"><span>Esp. Geoprocessamento</span><b>PUC-MG</b></div>
+      <div class="cred"><span>Esp. Georreferenciamento de Imóveis</span><b>PUC-GO</b></div>
+      <div class="cred"><span>Aerofotogrametria e SIG</span><b>Especialização</b></div>
+      <div class="cred"><span>Analytics e Business Intelligence</span><b>PUC-MG</b></div>
+      <div class="cred"><span>Igeotecnologia · Soluções Geoespaciais e Engenharia Ltda.</span><b>CNPJ 54.678.405/0001-02</b></div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============ PARCEIROS ============ -->
+<section class="sec" id="parceiros" aria-labelledby="t-parc" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div><span class="eyebrow">Rede de parceiros</span><h2 id="t-parc">Ninguém mapeia<br>a Amazônia sozinho.</h2></div>
+      <p>Equipamentos, especialidades e experiência de campo somados em uma rede que cobre do levantamento topográfico ao LiDAR aerotransportado.</p>
+    </div>
+    <div class="partners rv" id="partners"></div>
+  </div>
+</section>
+
+<!-- ============ AGENDA ============ -->
+<section class="sec" id="agenda" aria-labelledby="t-ag" style="padding-top:0">
+  <div class="wrap">
+    <div class="panel book rv">
+      <div>
+        <span class="eyebrow">Agendamento</span>
+        <h2 id="t-ag" style="margin-top:16px">Agende uma<br>conversa.</h2>
+        <p class="lead" style="margin-top:16px;font-size:17px">Escolha o formato, sugira data e horário. Confirmamos pelo WhatsApp ou e-mail em até 1 dia útil.</p>
+        <div class="types" role="radiogroup" aria-label="Tipo de atendimento" id="types"></div>
+      </div>
+      <div id="agendaArea">
+        <form class="form" id="bookForm" novalidate>
+          <div class="row">
+            <div class="field"><label for="bDate">Data preferida</label><input type="date" id="bDate" required><span class="err" id="eDate"></span></div>
+            <div class="field"><label for="bMode">Formato</label>
+              <select id="bMode"><option>Online (Google Meet)</option><option>Presencial · Manaus</option><option>Telefone / WhatsApp</option></select></div>
+          </div>
+          <div class="field"><span style="font-size:13.5px;font-weight:500;color:var(--text-2)" id="slotLbl">Horário (Manaus, UTC−4)</span>
+            <div class="slots" id="slots" role="group" aria-labelledby="slotLbl"></div><span class="err" id="eSlot"></span></div>
+          <div class="row">
+            <div class="field"><label for="bName">Nome</label><input id="bName" autocomplete="name" required><span class="err" id="eName"></span></div>
+            <div class="field"><label for="bOrg">Organização</label><input id="bOrg" autocomplete="organization" placeholder="Prefeitura, empresa, pesquisa…"></div>
+          </div>
+          <div class="field"><label for="bTopic">Assunto</label><textarea id="bTopic" rows="3" placeholder="Ex.: levantamento LiDAR de 120 ha em Rio Preto da Eva"></textarea></div>
+          <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+            <button class="btn btn-primary" type="submit">Solicitar agendamento via WhatsApp</button>
+            <span class="note">Nenhum dado é armazenado no site.</span>
+          </div>
+          <div class="ok-box" id="bookOk" role="status"></div>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CONTATO ============ -->
+<section class="sec" id="contato" aria-labelledby="t-ct" style="padding-top:0">
+  <div class="wrap contact">
+    <div class="rv">
+      <span class="eyebrow">Contato</span>
+      <h2 id="t-ct" style="margin-top:16px">Vamos mapear<br><span class="hl">o seu território.</span></h2>
+      <div class="channels" id="channels"></div>
+    </div>
+    <div class="panel rv">
+      <form class="form" id="ctForm" novalidate>
+        <div class="row">
+          <div class="field"><label for="cName">Nome</label><input id="cName" autocomplete="name" required><span class="err" id="ecName"></span></div>
+          <div class="field"><label for="cMail">E-mail</label><input id="cMail" type="email" autocomplete="email" required><span class="err" id="ecMail"></span></div>
+        </div>
+        <div class="row">
+          <div class="field"><label for="cOrg">Organização</label><input id="cOrg" autocomplete="organization"></div>
+          <div class="field"><label for="cType">Interesse</label>
+            <select id="cType"><option>Orçamento de serviço</option><option>Acesso a dados</option><option>Parceria / pesquisa</option><option>Perícia técnica</option><option>Software / WebGIS / IA</option><option>Imprensa / divulgação</option><option>Outro</option></select></div>
+        </div>
+        <div class="field"><label for="cMsg">Mensagem</label><textarea id="cMsg" rows="5" required placeholder="Conte o objetivo, a área (município/coordenadas) e o prazo."></textarea><span class="err" id="ecMsg"></span></div>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+          <button class="btn btn-primary" type="submit" id="ctBtn">Enviar mensagem</button>
+          <span class="note" id="ctNote"></span>
+        </div>
+        <div class="ok-box" id="ctOk" role="status"></div>
+      </form>
+    </div>
+  </div>
+</section>
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <a href="#top" class="brand">
+          <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true"><rect x=".5" y=".5" width="39" height="39" rx="10" fill="#0b1a2c" stroke="rgba(138,190,255,.3)"/><path d="M20 7 L31 32 L20 26 L9 32 Z" fill="none" stroke="#1ea7ff" stroke-width="2.4" stroke-linejoin="round"/><circle cx="20" cy="20.5" r="2.6" fill="#36d6c3"/></svg>
+          <span class="brand-txt"><b>Território Digital</b><small>por Igeotecnologia</small></span>
+        </a>
+        <p>Territórios que conectam pessoas e oportunidades. Soluções geoespaciais e engenharia a partir de Manaus, para toda a Amazônia.</p>
+      </div>
+      <div><h4>Navegação</h4><ul><li><a href="#solucoes">Soluções</a></li><li><a href="#projetos">Projetos</a></li><li><a href="#atlas">Atlas</a></li><li><a href="#agentico">Território Agêntico</a></li><li><a href="#hub">Hub de dados públicos</a></li><li><a href="#dados">Acervo próprio</a></li><li><a href="#parceiros">Parceiros</a></li></ul></div>
+      <div><h4>Atendimento</h4><ul><li><a href="#agenda">Agendar conversa</a></li><li><a href="#contato">Orçamento</a></li><li><a href="#dados" data-req="Acesso a dados">Acesso a dados</a></li></ul></div>
+      <div><h4>Contato</h4><ul id="footContact"></ul></div>
+    </div>
+    <div class="legal">
+      <span>© <span id="yr"></span> Igeotecnologia · Soluções Geoespaciais e Engenharia Ltda. · CNPJ 54.678.405/0001-02</span>
+      <span>Manaus – AM · Amazônia · Brasil</span>
+    </div>
+  </div>
+</footer>
+
+<a class="wa-float" id="waFloat" target="_blank" rel="noopener" aria-label="Conversar no WhatsApp">
+  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.8-.9-2-1-.3-.1-.5-.1-.7.1-.2.3-.8 1-.9 1.2-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6l.4-.5c.2-.2.2-.3.3-.5.1-.2 0-.4 0-.5l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4.2-.7.2-1.3.2-1.4-.1-.1-.3-.2-.6-.3zM12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.3c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.3 8.3 0 1 1 12 20.3z"/></svg>
+</a>
+
+<dialog class="reader" id="reader" aria-labelledby="rTitle">
+  <div class="reader-in" style="position:relative">
+    <button class="reader-close" id="rClose" aria-label="Fechar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    <div class="reader-img"><img id="rImg" alt=""></div>
+    <div class="reader-txt">
+      <div class="card-meta mono" id="rMeta" style="font-size:12px;color:var(--muted);letter-spacing:.06em"></div>
+      <h2 id="rTitle"></h2>
+      <div id="rBody" style="display:grid;gap:14px"></div>
+      <div class="reader-tags" id="rTags"></div>
+      <div class="reader-actions" id="rActions"></div>
+    </div>
+  </div>
+</dialog>
+
+<script src="posts.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+/* =========================================================
+   CONFIGURAÇÃO — edite aqui
+   ========================================================= */
+const CONFIG = {
+  whatsapp: "5592991717039",              // DDI + DDD + número, só dígitos
+  telefone: "(92) 99171-7039",
+  email: "atendimento@geothec.com",
+  instagram: "",                          // ex.: "https://instagram.com/igeotecnologia"
+  linkedin: "",
+  formspreeId: "",                        // ex.: "xyzabcd" → envia o formulário sem abrir o e-mail (formspree.io)
+  agendaUrl: "",                          // URL de agenda (Google Agenda "Agendamento de horários" ou Calendly) — se preenchida, substitui o formulário
+  base: { nome: "Base Igeotecnologia · Manaus", lat: -3.119, lon: -60.0217 },
+  // Abertura: fotos da equipe Igeotecnologia em campo (id do post + enquadramento da foto)
+  heroPosts: [
+    {id:"imoveis-rurais", pos:"90% 68%", zoom:1.8},
+    {id:"mapeamento-de-rede-hidrografica", pos:"88% 38%", zoom:2},
+    {id:"projetos-para-piscicultura", pos:"25% 58%", zoom:1.6}
+  ],
+  horarios: ["08:30","09:30","10:30","14:00","15:00","16:00","17:00"],
+  categorias: ["Projetos","Soluções","IA","Campo","Parcerias","Artigos","Software","Novidades"]
+};
+
+const SERVICOS = [
+  {t:"Aerolevantamento com drones", d:"Ortomosaicos, modelos 3D e imagens georreferenciadas de alta resolução, inclusive em áreas remotas e ribeirinhas.", tags:["RTK/PPK","Ortomosaico","GSD cm"], i:"drone"},
+  {t:"Mapeamento LiDAR", d:"Nuvem de pontos sob dossel, MDT/MDS, curvas de nível e altimetria para projetos de engenharia e aquicultura.", tags:["MDT","MDS","Curvas"], i:"lidar"},
+  {t:"Georreferenciamento & regularização", d:"Imóveis rurais e urbanos conforme INCRA/SIGEF, REURB, memoriais descritivos e peças para cartório.", tags:["SIGEF","REURB","Memorial"], i:"pin"},
+  {t:"Monitoramento ambiental & climático", d:"Estiagem, cheias, desmatamento e uso do solo com séries temporais de satélite e dados hidrometeorológicos.", tags:["Sentinel","Landsat","Cotas"], i:"leaf"},
+  {t:"Planejamento territorial & gestão pública", d:"Demanda por serviços, rede escolar, transporte fluvial e análise espacial para políticas públicas.", tags:["Educação","Buffer","Rede"], i:"layers"},
+  {t:"WebGIS & painéis", d:"Mapas interativos e dashboards publicados na web, conectados às suas bases e atualizados continuamente.", tags:["WebGIS","BI","API"], i:"web"},
+  {t:"IA & desenvolvimento", d:"Detecção automática de edificações, classificação de imagens e automação de rotinas geoespaciais.", tags:["Python","GDAL","Deep Learning"], i:"ai"},
+  {t:"Perícia & laudos técnicos", d:"Assistência técnica e perícia judicial em limites, sobreposições, áreas e conflitos fundiários.", tags:["Laudo","Parecer","TJAM"], i:"doc"}
+];
+
+const DATASETS = [
+  {t:"Ortomosaicos de comunidades ribeirinhas", d:"Imagens de drone georreferenciadas com edificações vetorizadas e classificadas.", f:["GeoTIFF","SHP","GPKG"], s:"ok", c:"var(--accent)"},
+  {t:"Modelos digitais LiDAR (MDT/MDS)", d:"Altimetria de alta densidade para áreas de projeto na região metropolitana de Manaus.", f:["LAZ","GeoTIFF","DXF"], s:"ok", c:"var(--data)"},
+  {t:"Monitor hidrológico da estiagem", d:"Cotas dos rios, áreas de leito exposto e comunidades afetadas por período seco.", f:["CSV","GeoJSON","WebGIS"], s:"ok", c:"var(--sand)"},
+  {t:"Malha fundiária georreferenciada", d:"Perímetros levantados em campo para análise de sobreposição e regularização.", f:["SHP","KML","ODS"], s:"soon", c:"var(--forest)"},
+  {t:"Equipamentos públicos & educação", d:"Escolas, demanda estimada e acessibilidade em áreas urbanas e rurais.", f:["GPKG","CSV"], s:"soon", c:"var(--accent-hi)"},
+  {t:"API Território Digital", d:"Acesso programático às camadas publicadas para integração com seus sistemas.", f:["REST","OGC WMS/WFS"], s:"soon", c:"var(--alert)"}
+];
+
+const LAB = [
+  {t:"WebGIS hidrometeorológico", d:"Monitoramento da seca e cheia na Amazônia em mapa interativo.", c:"leaflet · echarts · séries"},
+  {t:"Detecção de edificações por IA", d:"Contagem automática de edificações em ortomosaicos de drone.", c:"segmentação · GPKG"},
+  {t:"Painéis de gestão pública", d:"Indicadores territoriais e de contratação em BI para decisão.", c:"KPIs · filtros · mapa"},
+  {t:"Automação de peças técnicas", d:"Memoriais, plantas e relatórios gerados a partir dos dados de campo.", c:"python · gdal · pdf"}
+];
+
+const TIPOS = [
+  {t:"Reunião técnica online", s:"30 min · entender a demanda e o escopo"},
+  {t:"Demonstração de dados / WebGIS", s:"45 min · ver produtos e painéis na prática"},
+  {t:"Visita técnica de campo", s:"Reconhecimento da área de interesse"},
+  {t:"Consultoria / perícia", s:"Análise de documentos, limites e laudos"}
+];
+
+const ICONS = {
+  drone:'<path d="M5 7h4M15 7h4M7 7v3M17 7v3M9 12h6l1 3H8z"/><circle cx="12" cy="17.5" r="1.5"/><path d="M7 10h10"/>',
+  lidar:'<path d="M12 3v4M5 21l7-14 7 14"/><path d="M3 21h18" /><path d="M8.5 14h7"/>',
+  pin:'<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+  leaf:'<path d="M5 19c0-8 5-14 15-15-1 10-7 15-15 15z"/><path d="M5 19 13 11"/>',
+  layers:'<path d="m12 3 9 5-9 5-9-5 9-5z"/><path d="m3 13 9 5 9-5"/>',
+  web:'<rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18M8 21h8"/>',
+  ai:'<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/><path d="M10 10h4v4h-4z"/>',
+  doc:'<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/>',
+  phone:'<path d="M5 4h4l2 5-3 2a11 11 0 0 0 5 5l2-3 5 2v4a2 2 0 0 1-2 2A17 17 0 0 1 3 6a2 2 0 0 1 2-2"/>',
+  mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
+  wa:'<path d="M4 20l1.3-4A8 8 0 1 1 8 18.7z"/>',
+  map:'<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+  ig:'<rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/>',
+  in:'<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 10v7M8 7v.01M12 17v-4a2 2 0 0 1 4 0v4M12 10v7"/>'
+};
+const svg = (k, w=22) => `<svg width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[k]}</svg>`;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtData = iso => { try { return new Date(iso+"T12:00:00").toLocaleDateString("pt-BR",{day:"2-digit",month:"short",year:"numeric"}).replace(".",""); } catch(e){ return iso; } };
+const waLink = msg => `https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(msg)}`;
+const POSTS = (window.TD_POSTS || []).slice();
+
+/* ============ HEADER ============ */
+const header = $(".site-header");
+addEventListener("scroll", () => header.classList.toggle("scrolled", scrollY > 30), {passive:true});
+$("#menuBtn").addEventListener("click", e => {
+  const open = header.classList.toggle("open");
+  e.currentTarget.setAttribute("aria-expanded", open);
+});
+document.querySelectorAll(".nav-links a").forEach(a => a.addEventListener("click", () => { header.classList.remove("open"); $("#menuBtn").setAttribute("aria-expanded", false); }));
+
+/* ============ HERO: curvas de nível animadas ============ */
+(function topo(){
+  const cv = $("#topo"), ctx = cv.getContext("2d");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let W, H, dpr, cell = 16, t = 0, mx = -1, my = -1, last = 0;
+  // ruído de valor 3D simples
+  const P = new Uint8Array(512); { const p=[...Array(256).keys()]; for(let i=255;i>0;i--){const j=(Math.random()*(i+1))|0;[p[i],p[j]]=[p[j],p[i]];} for(let i=0;i<512;i++)P[i]=p[i&255]; }
+  const fade = x => x*x*(3-2*x), lerp=(a,b,x)=>a+(b-a)*x;
+  const h = (x,y,z) => P[(P[(P[x&255]+y)&255]+z)&255]/255;
+  function vn(x,y,z){ const X=Math.floor(x),Y=Math.floor(y),Z=Math.floor(z),fx=fade(x-X),fy=fade(y-Y),fz=fade(z-Z);
+    const a=lerp(lerp(h(X,Y,Z),h(X+1,Y,Z),fx),lerp(h(X,Y+1,Z),h(X+1,Y+1,Z),fx),fy);
+    const b=lerp(lerp(h(X,Y,Z+1),h(X+1,Y,Z+1),fx),lerp(h(X,Y+1,Z+1),h(X+1,Y+1,Z+1),fx),fy);
+    return lerp(a,b,fz); }
+  const field = (x,y,z) => vn(x,y,z)*.62 + vn(x*2.1,y*2.1,z*1.3)*.28 + vn(x*4.3,y*4.3,z)*.1;
+  function size(){ dpr=Math.min(devicePixelRatio||1,2); W=cv.clientWidth; H=cv.clientHeight; cv.width=W*dpr; cv.height=H*dpr; cell = W<700?14:16; }
+  function draw(){
+    ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W,H);
+    const cols=Math.ceil(W/cell)+1, rows=Math.ceil(H/cell)+1, sc=.0038, v=new Float32Array(cols*rows);
+    for(let j=0;j<rows;j++)for(let i=0;i<cols;i++) v[j*cols+i]=field(i*cell*sc+3, j*cell*sc+7, t);
+    const levels=16;
+    for(let L=1;L<levels;L++){
+      const th=L/levels*0.95+0.02, idx = L%5===0;
+      ctx.beginPath();
+      for(let j=0;j<rows-1;j++)for(let i=0;i<cols-1;i++){
+        const a=v[j*cols+i],b=v[j*cols+i+1],c=v[(j+1)*cols+i+1],d=v[(j+1)*cols+i];
+        const k=(a>th?8:0)|(b>th?4:0)|(c>th?2:0)|(d>th?1:0); if(k===0||k===15) continue;
+        const x=i*cell,y=j*cell,
+          T=[x+cell*(th-a)/(b-a),y], R=[x+cell,y+cell*(th-b)/(c-b)], B=[x+cell*(th-d)/(c-d),y+cell], Lf=[x,y+cell*(th-a)/(d-a)];
+        const seg=(p,q)=>{ctx.moveTo(p[0],p[1]);ctx.lineTo(q[0],q[1]);};
+        switch(k){case 1:case 14:seg(Lf,B);break;case 2:case 13:seg(B,R);break;case 3:case 12:seg(Lf,R);break;case 4:case 11:seg(T,R);break;
+          case 5:seg(Lf,T);seg(B,R);break;case 6:case 9:seg(T,B);break;case 7:case 8:seg(Lf,T);break;case 10:seg(T,R);seg(Lf,B);break;}
+      }
+      const tone = L/levels;
+      ctx.strokeStyle = idx ? `rgba(30,167,255,${.30+tone*.25})` : `rgba(120,180,255,${.07+tone*.1})`;
+      ctx.lineWidth = idx ? 1.25 : .8; ctx.stroke();
+    }
+    if(mx>=0){ const g=ctx.createRadialGradient(mx,my,0,mx,my,220); g.addColorStop(0,"rgba(54,214,195,.16)"); g.addColorStop(1,"rgba(54,214,195,0)"); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+      ctx.strokeStyle="rgba(54,214,195,.55)"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(mx-10,my);ctx.lineTo(mx+10,my);ctx.moveTo(mx,my-10);ctx.lineTo(mx,my+10);ctx.stroke(); }
+  }
+  function loop(ts){ if(ts-last>60){ t+=.006; draw(); last=ts; } if(!document.hidden) requestAnimationFrame(loop); }
+  size(); draw();
+  addEventListener("resize", () => { size(); draw(); });
+  // HUD: mapeia o cursor para um retângulo aproximado do Amazonas
+  const hero = $(".hero"), lat=$("#hLat"), lon=$("#hLon");
+  hero.addEventListener("pointermove", e => { const r=cv.getBoundingClientRect(); mx=e.clientX-r.left; my=e.clientY-r.top;
+    lat.textContent=(2.25-(my/r.height)*11.6).toFixed(4); lon.textContent=(-73.8+(mx/r.width)*17.6).toFixed(4); if(reduce) draw(); });
+  hero.addEventListener("pointerleave", () => { mx=-1; if(reduce) draw(); });
+  if(!reduce){ requestAnimationFrame(loop); document.addEventListener("visibilitychange", () => { if(!document.hidden) requestAnimationFrame(loop); }); }
+})();
+
+/* ============ HERO stack + métricas ============ */
+$("#mPosts").textContent = String(POSTS.length).padStart(2,"0");
+const heroSel = (CONFIG.heroPosts||[]).map(h=>({h,p:POSTS.find(x=>x.id===h.id)})).filter(x=>x.p);
+const heroList = heroSel.length ? heroSel : POSTS.slice(0,3).map(p=>({h:{pos:"top"},p}));
+$("#stack").innerHTML = heroList.map(({h,p}) =>
+  `<a href="#post=${esc(p.id)}" data-open="${esc(p.id)}" aria-label="${esc(p.titulo)}"><img src="${esc(p.imagem)}" alt="${esc(p.titulo)}" loading="eager" style="object-position:top;transform:scale(${h.zoom||1});transform-origin:${h.pos||"top"}"></a>`).join("") +
+  `<span class="stack-label">Nossa equipe em campo ↗</span>`;
+
+/* ============ TICKER ============ */
+const tk = ["Governo territorial agêntico","Hub de dados públicos","Aerolevantamento","LiDAR","Georreferenciamento","Regularização fundiária","Monitoramento da estiagem","WebGIS","Inteligência artificial","Comunidades ribeirinhas","Perícia técnica","Planejamento territorial"];
+$("#ticker").innerHTML = [...tk,...tk].map(x=>`<span>${x}</span>`).join("");
+
+/* ============ SERVIÇOS ============ */
+$("#services").innerHTML = SERVICOS.map((s,i)=>`<article class="svc"><span class="num">${String(i+1).padStart(2,"0")}</span>
+  <div class="ic">${svg(s.i)}</div><h3>${s.t}</h3><p>${s.d}</p><ul>${s.tags.map(t=>`<li>${t}</li>`).join("")}</ul></article>`).join("");
+
+/* ============ FEED ============ */
+let cat = "Todos", query = "", feedMax = 10;
+function renderChips(){
+  const cats = ["Todos", ...CONFIG.categorias];
+  const n = c => c==="Todos" ? POSTS.length : POSTS.filter(p=>p.categoria===c).length;
+  $("#chips").innerHTML = cats.filter(c => c==="Todos" || n(c)>0).map(c =>
+    `<button class="chip" aria-pressed="${c===cat}" data-cat="${c}">${c}<sup>${n(c)}</sup></button>`).join("");
+}
+function renderGrid(){
+  const q = query.trim().toLowerCase();
+  const list = POSTS.filter(p => (cat==="Todos"||p.categoria===cat) &&
+    (!q || [p.titulo,p.resumo,p.local,p.categoria,...(p.tags||[]),...(p.corpo||[])].join(" ").toLowerCase().includes(q)));
+  if(!list.length){ $("#grid").innerHTML = `<div class="empty">Nenhuma publicação encontrada para esse filtro.</div>`; return; }
+  let featIdx = (cat==="Todos" && !q) ? list.findIndex(p=>p.destaque) : -1;
+  if(featIdx>0){ list.unshift(list.splice(featIdx,1)[0]); featIdx=0; }
+  const total = list.length, view = list.slice(0, feedMax);
+  $("#grid").innerHTML = view.map((p,i) => {
+    const f = i===featIdx;
+    return `<button class="card${f?" feat":""}" data-open="${esc(p.id)}">
+      <div class="media"><img src="${esc(p.thumb)}" alt="" loading="lazy"><span class="cat">${esc(p.categoria)}</span></div>
+      <div class="body">${f?`<span class="badge">Em destaque</span>`:""}
+        <div class="meta"><span>${fmtData(p.data)}</span>${p.local?`<span>· ${esc(p.local.split("·").pop().trim())}</span>`:""}</div>
+        <h3>${esc(p.titulo)}</h3><p>${esc(p.resumo)}</p>
+        <span class="more">Ler publicação →</span></div></button>`;
+  }).join("") + (total>view.length ? `<button class="btn btn-ghost" id="feedMore" style="grid-column:1/-1;justify-self:center">Carregar mais publicações (${total-view.length})</button>` : "");
+}
+$("#grid").addEventListener("click", e => { if(e.target.closest("#feedMore")){ feedMax+=9; renderGrid(); } });
+$("#chips").addEventListener("click", e => { const b=e.target.closest("[data-cat]"); if(!b) return; cat=b.dataset.cat; renderChips(); renderGrid(); });
+$("#q").addEventListener("input", e => { query=e.target.value; renderGrid(); });
+renderChips(); renderGrid();
+
+/* ============ LEITOR (modal) ============ */
+const reader = $("#reader");
+function openPost(id, push=true){
+  const p = POSTS.find(x=>x.id===id); if(!p) return;
+  $("#rImg").src = p.imagem; $("#rImg").alt = p.titulo;
+  $("#rMeta").textContent = [p.categoria.toUpperCase(), fmtData(p.data), p.local].filter(Boolean).join("  ·  ");
+  $("#rTitle").textContent = p.titulo;
+  $("#rBody").innerHTML = [p.resumo && `<p style="color:var(--text);font-size:18px">${esc(p.resumo)}</p>`, ...(p.corpo||[]).map(c=>`<p>${esc(c)}</p>`)].filter(Boolean).join("");
+  $("#rTags").innerHTML = (p.tags||[]).map(t=>`<span>#${esc(t)}</span>`).join("");
+  const share = location.href.split("#")[0] + "#post=" + p.id;
+  $("#rActions").innerHTML =
+    `<a class="btn btn-primary btn-sm" target="_blank" rel="noopener" href="${waLink(`Olá! Vi a publicação "${p.titulo}" no Território Digital e gostaria de saber mais.`)}">Quero algo assim</a>` +
+    (p.link?`<a class="btn btn-ghost btn-sm" target="_blank" rel="noopener" href="${esc(p.link)}">Abrir recurso ↗</a>`:"") +
+    `<button class="btn btn-ghost btn-sm" id="rShare">Compartilhar</button>` +
+    `<a class="btn btn-ghost btn-sm" href="${esc(p.original)}" download>Baixar imagem</a>`;
+  $("#rShare").onclick = async () => { try{ if(navigator.share) await navigator.share({title:p.titulo,url:share}); else { await navigator.clipboard.writeText(share); $("#rShare").textContent="Link copiado ✓"; } }catch(e){} };
+  if(!reader.open) reader.showModal();
+  reader.querySelector(".reader-txt").scrollTop = 0;
+  if(push) history.replaceState(null,"","#post="+p.id);
+}
+document.addEventListener("click", e => { const o=e.target.closest("[data-open]"); if(o){ e.preventDefault(); openPost(o.dataset.open); } });
+$("#rClose").onclick = () => reader.close();
+reader.addEventListener("click", e => { if(e.target===reader) reader.close(); });
+reader.addEventListener("close", () => { if(location.hash.startsWith("#post=")) history.replaceState(null,"",location.pathname+location.search); });
+if(location.hash.startsWith("#post=")) openPost(decodeURIComponent(location.hash.slice(6)), false);
+
+/* ============ ATLAS (Leaflet) ============ */
+(function atlas(){
+  const geo = POSTS.filter(p => typeof p.lat==="number" && typeof p.lon==="number");
+  $("#atlasList").innerHTML = geo.map(p=>`<button class="atlas-item" data-geo="${esc(p.id)}"><img src="${esc(p.thumb)}" alt=""><div><b>${esc(p.titulo)}</b><span>${esc(p.local)}</span></div></button>`).join("") +
+    `<div class="atlas-item" style="cursor:default"><div class="ic" style="width:54px;height:54px;border-radius:8px;display:grid;place-items:center;background:rgba(54,214,195,.1);color:var(--data);flex:none">${svg("map")}</div><div><b>${CONFIG.base.nome}</b><span>Atendimento em todo o Amazonas</span></div></div>`;
+  if(!window.L){ $("#map").innerHTML = `<div class="empty" style="margin:24px">Mapa indisponível offline.</div>`; return; }
+  const map = L.map("map",{scrollWheelZoom:false,zoomControl:true,attributionControl:true}).setView([-3.6,-61.5],6);
+  const dark = L.tileLayer("https://{s}.basemap.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{maxZoom:19,subdomains:"abcd",attribution:'&copy; OpenStreetMap &copy; CARTO'}).addTo(map);
+  const sat = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,attribution:"Imagens &copy; Esri"});
+  L.control.layers({"Escuro":dark,"Satélite":sat},null,{position:"topright"}).addTo(map);
+  const icon = cls => L.divIcon({className:"",html:`<div class="pin ${cls}"></div>`,iconSize:[18,18],iconAnchor:[9,9]});
+  L.marker([CONFIG.base.lat,CONFIG.base.lon],{icon:icon("base")}).addTo(map).bindPopup(`<b>${CONFIG.base.nome}</b>Manaus – AM`);
+  const mk = {};
+  geo.forEach(p => { mk[p.id] = L.marker([p.lat,p.lon],{icon:icon("")}).addTo(map)
+    .bindPopup(`<b>${esc(p.titulo)}</b>${esc(p.local)}<br><a href="#post=${esc(p.id)}" data-open="${esc(p.id)}">Abrir publicação →</a>`); });
+  if(geo.length){ const b=L.latLngBounds([[CONFIG.base.lat,CONFIG.base.lon],...geo.map(p=>[p.lat,p.lon])]); map.fitBounds(b.pad(.8),{maxZoom:9}); }
+  $("#atlasList").addEventListener("click", e => { const b=e.target.closest("[data-geo]"); if(!b) return;
+    document.querySelectorAll(".atlas-item").forEach(x=>x.classList.toggle("on",x===b));
+    const p=geo.find(x=>x.id===b.dataset.geo); map.flyTo([p.lat,p.lon],11,{duration:1.2}); mk[p.id].openPopup(); });
+  new IntersectionObserver((en,ob)=>{ if(en[0].isIntersecting){ map.invalidateSize(); ob.disconnect(); } }).observe($("#map"));
+})();
+
+/* ============ DADOS ============ */
+$("#datasets").innerHTML = DATASETS.map(d=>`<article class="ds" style="--c:${d.c}">
+  <header><h3>${d.t}</h3><span class="status ${d.s}">${d.s==="ok"?"Sob consulta":"Em breve"}</span></header>
+  <p>${d.d}</p><div class="fmt">${d.f.map(x=>`<span>${x}</span>`).join("")}</div>
+  <button class="req" data-req="Acesso a dados" data-ds="${esc(d.t)}">${d.s==="ok"?"Solicitar acesso":"Avise-me quando lançar"} →</button></article>`).join("");
+document.addEventListener("click", e => { const r=e.target.closest("[data-req]"); if(!r) return; e.preventDefault();
+  const sel=$("#cType"); sel.value = [...sel.options].some(o=>o.text===r.dataset.req) ? r.dataset.req : "Acesso a dados";
+  if(r.dataset.ds) $("#cMsg").value = `Tenho interesse no conjunto de dados: ${r.dataset.ds}.\nFinalidade: \nÁrea de interesse: `;
+  $("#contato").scrollIntoView({behavior:"smooth"}); setTimeout(()=>$("#cName").focus({preventScroll:true}),700); });
+
+/* ============ LAB ============ */
+$("#labGrid").innerHTML = LAB.map(l=>`<article class="lab-card"><code>${l.c}</code><h3>${l.t}</h3><p>${l.d}</p></article>`).join("");
+
+/* ============ AGENDA ============ */
+$("#types").innerHTML = TIPOS.map((t,i)=>`<label class="type"><input type="radio" name="tipo" value="${t.t}" ${i===0?"checked":""}><span class="dot"></span><span><b>${t.t}</b><small>${t.s}</small></span></label>`).join("");
+let slot = "";
+$("#slots").innerHTML = CONFIG.horarios.map(h=>`<button type="button" class="slot" aria-pressed="false" data-slot="${h}">${h}</button>`).join("");
+$("#slots").addEventListener("click", e => { const b=e.target.closest("[data-slot]"); if(!b) return; slot=b.dataset.slot;
+  document.querySelectorAll(".slot").forEach(x=>x.setAttribute("aria-pressed", x===b)); $("#eSlot").textContent=""; });
+const d0 = new Date(); d0.setDate(d0.getDate()+1);
+$("#bDate").min = d0.toISOString().slice(0,10);
+if(CONFIG.agendaUrl){ $("#agendaArea").innerHTML = `<iframe class="agenda-embed" src="${esc(CONFIG.agendaUrl)}" title="Agenda online"></iframe>`; }
+$("#bookForm")?.addEventListener("submit", e => {
+  e.preventDefault(); let ok=true;
+  const date=$("#bDate").value, name=$("#bName").value.trim();
+  const dow = date ? new Date(date+"T12:00:00").getDay() : -1;
+  $("#eDate").textContent = !date ? "Escolha uma data." : (dow===0||dow===6) ? "Atendemos de segunda a sexta." : ""; if($("#eDate").textContent) ok=false;
+  $("#eSlot").textContent = slot ? "" : "Escolha um horário."; if(!slot) ok=false;
+  $("#eName").textContent = name ? "" : "Informe seu nome."; if(!name) ok=false;
+  if(!ok) return;
+  const tipo = document.querySelector('input[name="tipo"]:checked').value;
+  const dataBR = new Date(date+"T12:00:00").toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long"});
+  const msg = `Olá! Gostaria de agendar pelo site Território Digital:\n\n• Tipo: ${tipo}\n• Formato: ${$("#bMode").value}\n• Data: ${dataBR} às ${slot} (horário de Manaus)\n• Nome: ${name}${$("#bOrg").value?`\n• Organização: ${$("#bOrg").value}`:""}${$("#bTopic").value?`\n• Assunto: ${$("#bTopic").value}`:""}`;
+  const [hh,mm] = slot.split(":").map(Number);
+  const start = new Date(Date.UTC(+date.slice(0,4), +date.slice(5,7)-1, +date.slice(8,10), hh+4, mm));
+  const end = new Date(start.getTime()+ (tipo.includes("Demonstração")?45:30)*60000);
+  const g = d => d.toISOString().replace(/[-:]/g,"").replace(/\.\d{3}/,"");
+  const gcal = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(tipo+" · Território Digital")}&dates=${g(start)}/${g(end)}&details=${encodeURIComponent(msg)}&add=${encodeURIComponent(CONFIG.email)}`;
+  window.open(waLink(msg), "_blank", "noopener");
+  const box=$("#bookOk"); box.classList.add("show");
+  box.innerHTML = `Pedido preparado para <b>${dataBR}, ${slot}</b>. Envie a mensagem no WhatsApp para confirmar. <a href="${waLink(msg)}" target="_blank" rel="noopener">Abrir WhatsApp novamente</a> · <a href="${gcal}" target="_blank" rel="noopener">Salvar no Google Agenda</a>`;
+});
+
+/* ============ CONTATO ============ */
+const ch = [
+  {i:"wa",l:"WhatsApp",v:CONFIG.telefone,h:waLink("Olá! Vim pelo site Território Digital.")},
+  {i:"mail",l:"E-mail",v:CONFIG.email,h:`mailto:${CONFIG.email}`},
+  {i:"phone",l:"Telefone",v:CONFIG.telefone,h:`tel:+${CONFIG.whatsapp}`},
+  {i:"map",l:"Base",v:"Manaus – AM · Amazônia",h:"#atlas"},
+  CONFIG.instagram && {i:"ig",l:"Instagram",v:CONFIG.instagram.replace(/^https?:\/\/(www\.)?/,""),h:CONFIG.instagram},
+  CONFIG.linkedin && {i:"in",l:"LinkedIn",v:CONFIG.linkedin.replace(/^https?:\/\/(www\.)?/,""),h:CONFIG.linkedin}
+].filter(Boolean);
+$("#channels").innerHTML = ch.map(c=>`<a class="channel" href="${c.h}" ${c.h.startsWith("http")?'target="_blank" rel="noopener"':""}><span class="ic">${svg(c.i,20)}</span><span><small>${c.l}</small><b>${esc(c.v)}</b></span></a>`).join("");
+$("#footContact").innerHTML = ch.slice(0,3).map(c=>`<li><a href="${c.h}" ${c.h.startsWith("http")?'target="_blank" rel="noopener"':""}>${esc(c.v)}</a></li>`).join("");
+$("#waFloat").href = waLink("Olá! Vim pelo site Território Digital.");
+$("#ctNote").textContent = CONFIG.formspreeId ? "Resposta em até 1 dia útil." : "Abrirá seu aplicativo de e-mail.";
+$("#ctForm").addEventListener("submit", async e => {
+  e.preventDefault(); let ok=true;
+  const name=$("#cName").value.trim(), mail=$("#cMail").value.trim(), msg=$("#cMsg").value.trim();
+  $("#ecName").textContent = name?"":"Informe seu nome."; if(!name) ok=false;
+  $("#ecMail").textContent = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)?"":"E-mail inválido."; if($("#ecMail").textContent) ok=false;
+  $("#ecMsg").textContent = msg?"":"Escreva sua mensagem."; if(!msg) ok=false;
+  if(!ok) return;
+  const data = {nome:name,email:mail,organizacao:$("#cOrg").value,interesse:$("#cType").value,mensagem:msg};
+  const box=$("#ctOk");
+  if(CONFIG.formspreeId){
+    $("#ctBtn").disabled=true; $("#ctBtn").textContent="Enviando…";
+    try{ const r = await fetch(`https://formspree.io/f/${CONFIG.formspreeId}`,{method:"POST",headers:{"Accept":"application/json","Content-Type":"application/json"},body:JSON.stringify(data)});
+      if(!r.ok) throw 0; e.target.reset(); box.innerHTML="Mensagem enviada. Retornaremos em breve ✓"; }
+    catch(err){ box.innerHTML=`Não foi possível enviar agora. Tente pelo <a href="${waLink(msg)}" target="_blank" rel="noopener">WhatsApp</a>.`; }
+    box.classList.add("show"); $("#ctBtn").disabled=false; $("#ctBtn").textContent="Enviar mensagem";
+  } else {
+    const body = `Nome: ${data.nome}\nE-mail: ${data.email}\nOrganização: ${data.organizacao}\nInteresse: ${data.interesse}\n\n${data.mensagem}`;
+    location.href = `mailto:${CONFIG.email}?subject=${encodeURIComponent("[Território Digital] "+data.interesse)}&body=${encodeURIComponent(body)}`;
+    box.innerHTML = `Seu aplicativo de e-mail foi aberto. Prefere agilidade? <a href="${waLink(body)}" target="_blank" rel="noopener">Envie pelo WhatsApp</a>.`; box.classList.add("show");
+  }
+});
+
+
+/* ============ ÁREAS DE ATUAÇÃO (carrossel) ============ */
+const AREAS = [
+  {t:"Regularização e imóveis", s:"Georreferenciamento e plantas", img:"postagens/_thumbs/planta-humanizado-para-o-seu-imovel.webp", busca:"Georreferenciamento"},
+  {t:"Comunidades ribeirinhas", s:"Reconhecimento do território", img:"postagens/_thumbs/levantamento-aereo.webp", busca:"ribeirinhas"},
+  {t:"Estiagem e clima", s:"Monitoramento hidrológico", img:"postagens/_thumbs/monitoramento-climatico.webp", busca:"Estiagem"},
+  {t:"LiDAR, agro e piscicultura", s:"Modelos de terreno e master plan", img:"postagens/_thumbs/projetos-para-piscicultura.webp", busca:"LiDAR"},
+  {t:"Recursos hídricos", s:"Igarapés e rede de drenagem", img:"postagens/_thumbs/mapeamento-de-rede-hidrografica.webp", busca:"Hidrografia"},
+  {t:"Gestão pública e educação", s:"Demanda, rede e agentes de IA", img:"postagens/_thumbs/mapeamento-rural.webp", busca:"Gestão Pública"},
+  {t:"Perícia técnica", s:"Limites, áreas e conflitos", img:"", contato:"Perícia técnica"}
+];
+$("#areas").innerHTML = AREAS.map((a,i)=>`<button class="area${a.img?"":" alt"}" data-area="${i}">
+  ${a.img?`<img src="${esc(a.img)}" alt="" loading="lazy" style="object-position:50% 62%">`:""}
+  <div class="in"><small>${String(i+1).padStart(2,"0")} · ${esc(a.s)}</small><b>${esc(a.t)}</b>
+  <span class="go">${a.contato?"Falar com um perito":"Ver projetos"}<span aria-hidden="true">→</span></span></div></button>`).join("");
+$("#areas").addEventListener("click", e => { const b=e.target.closest("[data-area]"); if(!b) return; const a=AREAS[+b.dataset.area];
+  if(a.contato){ const sel=$("#cType"); sel.value=a.contato; $("#contato").scrollIntoView({behavior:"smooth"}); return; }
+  cat="Todos"; query=a.busca; $("#q").value=a.busca; renderChips(); renderGrid(); $("#projetos").scrollIntoView({behavior:"smooth"}); });
+(function(){ const el=$("#areas"), pv=$("#carPrev"), nx=$("#carNext");
+  const step=()=>el.querySelector(".area").getBoundingClientRect().width+16;
+  const upd=()=>{ pv.disabled=el.scrollLeft<8; nx.disabled=el.scrollLeft+el.clientWidth>=el.scrollWidth-8; };
+  pv.onclick=()=>el.scrollBy({left:-step(),behavior:"smooth"}); nx.onclick=()=>el.scrollBy({left:step(),behavior:"smooth"});
+  el.addEventListener("scroll",upd,{passive:true}); addEventListener("resize",upd); upd(); })();
+
+/* ============ INDICADORES (sempre com fonte) ============ */
+const INDICADORES = {
+  itens: [
+    {v:51, l:"edificações identificadas e classificadas"},
+    {v:212, p:"≈", l:"pessoas estimadas na comunidade"},
+    {v:47, p:"≈", l:"crianças e jovens de 4 a 17 anos"},
+    {v:1, l:"escola existente mapeada para a rede"}
+  ],
+  fonte: "Fonte: levantamento aéreo com drone em comunidade ribeirinha do Amazonas, 2026 (43 residenciais, 3 comunitárias e 5 outras edificações). População e faixa etária são estimativas.",
+  post: "mapeamento-rural"
+};
+$("#stats").innerHTML = INDICADORES.itens.map(x=>`<div class="stat"><b>${x.p?`<span style="color:var(--muted);font-weight:400">${x.p}</span>`:""}<span class="cnt" data-v="${x.v}">${x.v}</span></b><span>${x.l}</span></div>`).join("");
+$("#indSrc").innerHTML = esc(INDICADORES.fonte) + (INDICADORES.post?` <button data-open="${INDICADORES.post}">Ver o estudo →</button>`:"");
+(function(){ const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches; if(reduce) return;
+  const els=[...document.querySelectorAll(".cnt")]; els.forEach(e=>e.textContent="0");
+  new IntersectionObserver((en,ob)=>{ if(!en[0].isIntersecting) return; ob.disconnect();
+    const t0=performance.now(); (function f(t){ const k=Math.min(1,(t-t0)/1600), e=1-Math.pow(1-k,3);
+      els.forEach(x=>x.textContent=Math.round(+x.dataset.v*e)); if(k<1) requestAnimationFrame(f); })(t0);
+  },{threshold:.4}).observe($("#stats")); })();
+
+/* ============ VITRINE (Lab) ============
+   Troque "img" por prints reais (ex.: "assets/vitrine/webgis.png") e use size:"cover", pos:"center". */
+const VITRINE = [
+  {t:"Nuvem LiDAR · altimetria", d:"MDT · piscicultura", url:"lidar / Rio Preto da Eva", img:"postagens/_web/mapeamento-lidar.webp", size:"154% auto", pos:"100% 70%", ar:"664/340"},
+  {t:"Vetorização de edificações", d:"drone · GPKG", url:"ribeirinhas / vetores", img:"postagens/_web/mapeamento-rural.webp", size:"138% auto", pos:"91% 22%", ar:"4/3"},
+  {t:"Monitor da estiagem", d:"hidrologia · campo", url:"estiagem / amazonas", img:"postagens/_web/monitoramento-climatico.webp", size:"150% auto", pos:"100% 75%", ar:"4/3"}
+];
+$("#vitrine").innerHTML = VITRINE.map(v=>`<figure class="win">
+  <div class="win-bar"><i></i><i></i><i></i><em>territoriodigital / ${esc(v.url)}</em></div>
+  <div class="win-view" role="img" aria-label="${esc(v.t)}" style="background-image:url('${esc(v.img)}');background-size:${v.size};background-position:${v.pos};aspect-ratio:${v.ar}"></div>
+  <figcaption class="win-cap"><b>${esc(v.t)}</b><span>${esc(v.d)}</span></figcaption></figure>`).join("");
+
+
+/* ============ TERRITÓRIO AGÊNTICO ============ */
+Object.assign(ICONS,{
+  cap:'<path d="m2 9 10-5 10 5-10 5z"/><path d="M6 11v5c3 2 9 2 12 0v-5"/>',
+  bus:'<rect x="4" y="3" width="16" height="14" rx="2"/><path d="M4 11h16M8 21v-4M16 21v-4"/><circle cx="8" cy="14" r=".5"/><circle cx="16" cy="14" r=".5"/>',
+  bank:'<path d="m3 9 9-5 9 5"/><path d="M5 9v9M9 9v9M15 9v9M19 9v9M3 20h18"/>',
+  chart:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'
+});
+const AGENTES = [
+  {n:"Agente da Educação", i:"cap", c:"#5cc0ff", b:["Monitora a demanda por vagas","Detecta crescimento populacional","Sugere locais para novas escolas"]},
+  {n:"Agente do Transporte Escolar", i:"bus", c:"#36d6c3", b:["Analisa rotas","Identifica atrasos","Recomenda novos pontos de embarque"]},
+  {n:"Agente do Patrimônio", i:"bank", c:"#d9b47d", b:["Verifica matrículas","Cruza informações cartográficas","Identifica inconsistências fundiárias"]},
+  {n:"Agente Ambiental", i:"leaf", c:"#86e07f", b:["Monitora APPs","Detecta ocupações","Avalia riscos ambientais"]},
+  {n:"Agente Estratégico", i:"chart", c:"#b79cff", b:["Integra todas as informações","Simula cenários","Apresenta alternativas para decisão"], wide:true}
+];
+$("#agents").innerHTML = AGENTES.map(a=>`<article class="agent${a.wide?" wide":""}" style="--c:${a.c}">
+  <div style="display:flex;gap:14px;align-items:center"><span class="ic">${svg(a.i)}</span><h3>${a.n}</h3></div>
+  <ul>${a.b.map(x=>`<li>${x}</li>`).join("")}</ul></article>`).join("");
+
+/* ============ HUB DE DADOS PÚBLICOS ============ */
+const FONTES = [
+  {tema:"Base & limites", org:"IBGE", t:"Malhas territoriais", d:"Limites de país, estados, municípios, distritos e setores censitários, atualizados anualmente.", f:["SHP","GPKG","KML"], dica:"Use a malha do mesmo ano dos dados estatísticos para evitar divergência de limites.", u:"https://www.ibge.gov.br/geociencias/organizacao-do-territorio/malhas-territoriais/15774-malhas.html"},
+  {tema:"Base & limites", org:"IBGE", t:"Downloads de geociências (BC250, cartas, imagens)", d:"Bases cartográficas contínuas, cartas topográficas, atlas e imagens do acervo do IBGE.", f:["SHP","GPKG","PDF","GeoTIFF"], dica:"A BC250 (1:250.000) é a base de referência para hidrografia, vias e localidades em escala regional.", u:"https://www.ibge.gov.br/geociencias/downloads-geociencias.html"},
+  {tema:"Base & limites", org:"INDE", t:"Infraestrutura Nacional de Dados Espaciais", d:"Catálogo federado de metadados e serviços OGC dos órgãos públicos brasileiros.", f:["WMS","WFS","CSW"], dica:"Conecte o WMS/WFS direto no QGIS para consultar sem baixar.", u:"https://inde.gov.br"},
+  {tema:"Base & limites", org:"IBGE", t:"IBGE-PPP · pós-processamento GNSS", d:"Serviço gratuito de Posicionamento por Ponto Preciso, com resultado em SIRGAS 2000.", f:["RINEX","PDF"], dica:"Ideal para homologar a base GNSS antes de levantamentos RTK/PPK.", u:"https://www.ibge.gov.br/geociencias/informacoes-sobre-posicionamento-geodesico/servicos-para-posicionamento-geodesico/16334-servico-online-para-pos-processamento-de-dados-gnss-ibge-ppp.html"},
+  {tema:"Fundiário", org:"INCRA", t:"SIGEF · Sistema de Gestão Fundiária", d:"Parcelas rurais certificadas, com vértices e limites georreferenciados.", f:["SHP","CSV","ODS"], dica:"Confira sobreposições com sua poligonal antes de submeter uma certificação.", u:"https://sigef.incra.gov.br"},
+  {tema:"Fundiário", org:"INCRA", t:"Acervo fundiário · imóveis certificados", d:"Coordenadas e arquivos dos imóveis rurais certificados, por município ou estado.", f:["SHP","KML"], dica:"Bom ponto de partida para levantar confrontantes.", u:"https://www.gov.br/pt-br/servicos/obter-coordenadas-e-baixar-os-arquivos-dos-imoveis-ruras-certificados"},
+  {tema:"Fundiário", org:"SFB / MMA", t:"SICAR · Cadastro Ambiental Rural", d:"Perímetros autodeclarados de imóveis rurais, APP, Reserva Legal e remanescentes.", f:["SHP"], dica:"Dado autodeclaratório: valide em campo antes de usar em laudo.", u:"https://www.car.gov.br"},
+  {tema:"Fundiário", org:"FUNAI", t:"Terras indígenas · dados geoespaciais", d:"Limites de terras indígenas, aldeias e coordenações regionais, atualizados mensalmente.", f:["SHP","KML","CSV"], dica:"Verifique a fase do processo demarcatório na tabela de atributos.", u:"https://www.gov.br/funai/pt-br/atuacao/terras-indigenas/geoprocessamento-e-mapas"},
+  {tema:"Fundiário", org:"MMA", t:"CNUC · Unidades de conservação", d:"Polígonos das unidades de conservação federais, estaduais e municipais.", f:["SHP"], dica:"Inclua no mapa de localização em estudos ambientais e de licenciamento.", u:"https://dados.mma.gov.br/dataset/unidadesdeconservacao"},
+  {tema:"Ambiental & clima", org:"INPE", t:"TerraBrasilis · PRODES e DETER", d:"Desmatamento anual (PRODES) e alertas diários (DETER) da Amazônia Legal.", f:["SHP","GeoTIFF","WMS"], dica:"PRODES para séries históricas; DETER para alertas recentes.", u:"https://terrabrasilis.dpi.inpe.br"},
+  {tema:"Ambiental & clima", org:"INPE", t:"Programa Queimadas · focos de calor", d:"Focos de queimadas por satélite, com filtros por período, bioma e município.", f:["CSV","SHP","KML"], dica:"Use o satélite de referência para comparar anos.", u:"https://terrabrasilis.dpi.inpe.br/queimadas/portal/"},
+  {tema:"Ambiental & clima", org:"MapBiomas", t:"Uso e cobertura da terra", d:"Mapas anuais de uso e cobertura desde 1985, com transições e estatísticas.", f:["GeoTIFF","XLSX"], dica:"Recorte por município direto na plataforma ou via Google Earth Engine.", u:"https://brasil.mapbiomas.org"},
+  {tema:"Ambiental & clima", org:"INMET", t:"BDMEP · dados meteorológicos históricos", d:"Séries de estações convencionais e automáticas: chuva, temperatura, umidade.", f:["CSV"], dica:"Combine com cotas fluviais para análises de estiagem e cheia.", u:"https://bdmep.inmet.gov.br"},
+  {tema:"Hidrografia", org:"ANA", t:"HidroWeb · séries hidrológicas", d:"Cotas, vazões e chuva das estações da rede hidrometeorológica nacional.", f:["CSV","TXT","MDB"], dica:"Para Manaus, use a estação do Rio Negro no Porto de Manaus.", u:"https://www.snirh.gov.br/hidroweb"},
+  {tema:"Hidrografia", org:"ANA", t:"Catálogo de metadados · Base Hidrográfica Ottocodificada", d:"Trechos de drenagem, ottobacias e massas d'água em várias escalas.", f:["SHP","GPKG","WMS"], dica:"A codificação de Otto permite traçar montante e jusante com consultas simples.", u:"https://metadados.snirh.gov.br"},
+  {tema:"Hidrografia", org:"ANA", t:"Sala de Situação · Rio Amazonas", d:"Boletins diários de níveis dos rios da bacia amazônica.", f:["PDF"], dica:"Fonte oficial para contextualizar mapas de estiagem e cheia.", u:"https://www.gov.br/ana/pt-br/sala-de-situacao/rio-amazonas"},
+  {tema:"Imagens & relevo", org:"ESA", t:"Copernicus Data Space · Sentinel-1/2", d:"Imagens ópticas (10 m) e radar gratuitas, com revisita de poucos dias.", f:["SAFE","GeoTIFF"], dica:"Sentinel-1 (radar) enxerga através de nuvens: essencial na Amazônia.", u:"https://dataspace.copernicus.eu"},
+  {tema:"Imagens & relevo", org:"USGS", t:"EarthExplorer · Landsat e SRTM", d:"Série Landsat desde os anos 1970 e modelo de elevação SRTM de 30 m.", f:["GeoTIFF"], dica:"SRTM é modelo de superfície: sob floresta, não substitui o MDT LiDAR.", u:"https://earthexplorer.usgs.gov"},
+  {tema:"Imagens & relevo", org:"INPE", t:"Catálogo de imagens · CBERS e Amazonia-1", d:"Imagens dos satélites brasileiros, gratuitas.", f:["GeoTIFF"], dica:"CBERS-4A WPM oferece pancromática de 2 m para escalas maiores.", u:"https://www.dgi.inpe.br/catalogo/explore"},
+  {tema:"Imagens & relevo", org:"SGB", t:"GeoSGB · geologia e recursos minerais", d:"Mapas geológicos, geodiversidade, áreas de risco e recursos hídricos subterrâneos.", f:["SHP","PDF","WMS"], dica:"Útil para setorização de risco e projetos de engenharia.", u:"https://geosgb.sgb.gov.br"},
+  {tema:"Infraestrutura", org:"DNIT", t:"VGeo · Sistema Nacional de Viação", d:"Rodovias federais e estaduais com situação física e jurisdição.", f:["SHP","KML"], dica:"Combine com a BC250 para acessos vicinais e ramais.", u:"https://servicos.dnit.gov.br/vgeo/"},
+  {tema:"Infraestrutura", org:"ANEEL", t:"SIGEL · Sistema elétrico", d:"Linhas de transmissão, subestações e usinas georreferenciadas.", f:["SHP","KML"], dica:"Referência para corredores lineares e faixas de servidão.", u:"https://sigel.aneel.gov.br"},
+  {tema:"Social & educação", org:"IBGE", t:"SIDRA · tabelas do Censo e pesquisas", d:"Dados estatísticos por município e setor censitário, para unir às malhas.", f:["CSV","XLSX","API"], dica:"Faça o join pelo código geográfico (CD_MUN / CD_SETOR).", u:"https://sidra.ibge.gov.br"},
+  {tema:"Social & educação", org:"INEP", t:"Microdados · Censo Escolar", d:"Escolas, matrículas e infraestrutura escolar de todo o país.", f:["CSV"], dica:"Base para análise de demanda e rede escolar (e para o Agente da Educação).", u:"https://www.gov.br/inep/pt-br/acesso-a-informacao/dados-abertos/microdados"},
+  {tema:"Social & educação", org:"DATASUS", t:"CNES · estabelecimentos de saúde", d:"Cadastro dos estabelecimentos de saúde com endereço e tipo de serviço.", f:["CSV","API"], dica:"Geocodifique pelo endereço ou CEP para análises de acessibilidade.", u:"https://cnes.datasus.gov.br"},
+  {tema:"Social & educação", org:"Governo Federal", t:"dados.gov.br · Portal de Dados Abertos", d:"Catálogo geral de conjuntos de dados abertos de órgãos federais.", f:["Vários"], dica:"Busque por “georreferenciado” ou pelo nome do órgão.", u:"https://dados.gov.br"}
+];
+let hubTema="Todos", hubQ="", prancha=[], hubAll=false;
+try{ prancha = JSON.parse(localStorage.getItem("td_prancha")||"[]"); }catch(e){ prancha=[]; }
+const salvarPrancha=()=>{ try{ localStorage.setItem("td_prancha",JSON.stringify(prancha)); }catch(e){} };
+function renderHub(){
+  const temas=["Todos",...new Set(FONTES.map(f=>f.tema))];
+  $("#hubChips").innerHTML = temas.map(t=>`<button class="chip" aria-pressed="${t===hubTema}" data-tema="${t}">${t}<sup>${t==="Todos"?FONTES.length:FONTES.filter(f=>f.tema===t).length}</sup></button>`).join("");
+  const q=hubQ.trim().toLowerCase();
+  const list=FONTES.map((f,i)=>({...f,i})).filter(f=>(hubTema==="Todos"||f.tema===hubTema)&&(!q||[f.t,f.org,f.d,f.dica,f.tema,...f.f].join(" ").toLowerCase().includes(q)));
+  const limit = (!hubAll && hubTema==="Todos" && !q) ? 6 : Infinity, total=list.length;
+  const shown = list.slice(0,limit);
+  $("#srcGrid").innerHTML = shown.length ? shown.map(f=>{ const on=prancha.includes(f.i); return `<article class="srcc${on?" on":""}">
+    <div class="org"><span>${esc(f.org)}</span><span>${esc(f.tema)}</span></div>
+    <h3>${esc(f.t)}</h3><p>${esc(f.d)}</p><div class="fmt">${f.f.map(x=>`<span>${x}</span>`).join("")}</div>
+    <div class="tip">${esc(f.dica)}</div>
+    <div class="act"><a href="${esc(f.u)}" target="_blank" rel="noopener">Acessar ↗</a><button data-pr="${f.i}" aria-pressed="${on}">${on?"✓ Na prancha":"+ Prancha"}</button></div></article>`; }).join("")
+    : `<div class="empty">Nenhuma fonte para esse filtro.</div>`;
+  if(total>shown.length) $("#srcGrid").insertAdjacentHTML("beforeend",`<button class="btn btn-ghost" id="hubMore" style="grid-column:1/-1">Ver todas as ${total} fontes ↓</button>`);
+  renderPrancha();
+}
+function utmInfo(){
+  const lat=parseFloat($("#uLat").value.replace(",",".")), lon=parseFloat($("#uLon").value.replace(",","."));
+  if(!isFinite(lat)||!isFinite(lon)||Math.abs(lat)>84||Math.abs(lon)>180) return null;
+  const zone=Math.floor((lon+180)/6)+1, l0=((zone-1)*6-180+3)*Math.PI/180, f=1/298.257222101, a=6378137, e2=f*(2-f), ep=e2/(1-e2), k0=.9996;
+  const p=lat*Math.PI/180, N=a/Math.sqrt(1-e2*Math.sin(p)**2), T=Math.tan(p)**2, C=ep*Math.cos(p)**2, A=Math.cos(p)*(lon*Math.PI/180-l0);
+  const M=a*((1-e2/4-3*e2**2/64-5*e2**3/256)*p-(3*e2/8+3*e2**2/32+45*e2**3/1024)*Math.sin(2*p)+(15*e2**2/256+45*e2**3/1024)*Math.sin(4*p)-(35*e2**3/3072)*Math.sin(6*p));
+  const E=k0*N*(A+(1-T+C)*A**3/6+(5-18*T+T*T+72*C-58*ep)*A**5/120)+500000;
+  let No=k0*(M+N*Math.tan(p)*(A*A/2+(5-T+9*C+4*C*C)*A**4/24+(61-58*T+T*T+600*C-330*ep)*A**6/720)); const hem=lat<0?"S":"N"; if(lat<0) No+=1e7;
+  const epsg = hem==="S" ? (zone>=17&&zone<=25?31960+zone:null) : (zone>=18&&zone<=22?31954+zone:null);
+  return {zone,hem,E,N:No,epsg};
+}
+function renderUTM(){
+  const u=utmInfo();
+  $("#uOut").innerHTML = u ? `<div><small>Fuso</small><b>${u.zone}${u.hem}</b></div><div><small>EPSG</small><b>${u.epsg??"—"}</b></div>
+    <div><small>E (m)</small><b>${u.E.toLocaleString("pt-BR",{maximumFractionDigits:3,minimumFractionDigits:3})}</b></div><div><small>N (m)</small><b>${u.N.toLocaleString("pt-BR",{maximumFractionDigits:3,minimumFractionDigits:3})}</b></div>`
+    : `<div style="grid-column:1/-1"><small>Coordenada inválida</small><b>use graus decimais</b></div>`;
+  renderPrancha();
+}
+function renderPrancha(){
+  const sel=prancha.map(i=>FONTES[i]).filter(Boolean);
+  $("#pCount").textContent = sel.length+(sel.length===1?" fonte":" fontes");
+  if(!sel.length){ $("#pCite").textContent="Nenhuma fonte selecionada."; return; }
+  const hoje=new Date().toLocaleDateString("pt-BR"), u=utmInfo();
+  const orgs=[...new Set(sel.map(f=>f.org))].join("; ");
+  const ref = u ? `SIRGAS 2000 / UTM ${u.zone}${u.hem}${u.epsg?` (EPSG:${u.epsg})`:""}` : "SIRGAS 2000";
+  $("#pCite").textContent =
+`LEGENDA DO MAPA
+Fonte: ${orgs} (acesso em ${hoje}).
+Sistema de referência: ${ref}.
+Elaboração: [nome / registro profissional] — ${new Date().toLocaleDateString("pt-BR",{month:"2-digit",year:"numeric"})}.
+
+REFERÊNCIAS
+${sel.map(f=>`${f.org}. ${f.t}. Disponível em: ${f.u}. Acesso em: ${hoje}.`).join("\n")}`;
+}
+$("#hubChips").addEventListener("click",e=>{const b=e.target.closest("[data-tema]"); if(!b) return; hubTema=b.dataset.tema; renderHub();});
+$("#hubQ").addEventListener("input",e=>{hubQ=e.target.value; renderHub();});
+$("#srcGrid").addEventListener("click",e=>{ if(e.target.closest("#hubMore")){ hubAll=true; renderHub(); return; } const b=e.target.closest("[data-pr]"); if(!b) return; const i=+b.dataset.pr;
+  prancha = prancha.includes(i) ? prancha.filter(x=>x!==i) : [...prancha,i]; salvarPrancha(); renderHub();});
+$("#pClear").onclick=()=>{prancha=[];salvarPrancha();renderHub();};
+$("#pCopy").onclick=async()=>{ try{ await navigator.clipboard.writeText($("#pCite").textContent); $("#pCopy").textContent="Copiado ✓"; setTimeout(()=>$("#pCopy").textContent="Copiar texto",1600);}catch(e){} };
+["#uLat","#uLon"].forEach(s=>$(s).addEventListener("input",renderUTM));
+const CHECK=["Título","Legenda","Escala gráfica e numérica","Indicação do Norte","Grade de coordenadas","Sistema de referência (SIRGAS 2000)","Fontes dos dados e datas","Mapa de localização","Responsável técnico e data","Nota de escala de uso / precisão"];
+$("#check").innerHTML = CHECK.map((c,i)=>`<li><label><input type="checkbox" data-ck="${i}">${c}</label></li>`).join("");
+$("#check").addEventListener("change",()=>{ const n=document.querySelectorAll("#check input:checked").length; $("#cCount").textContent=`${n}/${CHECK.length}`; $("#cBar").style.width=(n/CHECK.length*100)+"%"; });
+renderHub(); renderUTM();
+
+/* ============ PARCEIROS ============ */
+const PARCEIROS = [
+  {n:"Igeotecnologia", s:"Soluções Geoespaciais e Engenharia", d:"Geoprocessamento, georreferenciamento, aerolevantamento e inteligência territorial. Responsável pelo Território Digital.", me:true, links:[["Agendar conversa","#agenda"]]},
+  {n:"Azimute", s:"Tecnologia em Geodados", d:"Aerolevantamento com RPAS, LiDAR (M350 RTK + Zenmuse L2), GNSS RTK/PPK e expedições de campo na Amazônia.", busca:"Azimute", links:[["azimutetec.com","https://www.azimutetec.com"],["@azimutetec","https://instagram.com/azimutetec"]]},
+  {n:"ArborGeo", s:"Território · Ambiente · Soluções", d:"Parceira em levantamentos ambientais, rede hidrográfica e inventário florestal.", busca:"ArborGeo", links:[]},
+  {n:"Almeida", s:"Topografia", d:"Levantamentos topográficos, locação de marcos, georreferenciamento de imóveis e plantas em Manaus e região.", busca:"Almeida", links:[]}
+];
+$("#partners").innerHTML = PARCEIROS.map(p=>`<article class="partner${p.me?" me":""}"><div class="lg">${esc(p.n)}<small>${esc(p.s)}</small></div><p>${esc(p.d)}</p>
+  <div class="links">${p.busca?`<button data-busca="${esc(p.busca)}">Ver publicações →</button>`:""}${p.links.map(([t,u])=>`<a href="${u}" ${u.startsWith("http")?'target="_blank" rel="noopener"':""}>${t}</a>`).join("")}</div></article>`).join("");
+$("#partners").addEventListener("click",e=>{const b=e.target.closest("[data-busca]"); if(!b) return; cat="Todos"; query=b.dataset.busca; $("#q").value=query; renderChips(); renderGrid(); $("#projetos").scrollIntoView({behavior:"smooth"});});
+
+/* ============ REVEAL ============ */
+$("#yr").textContent = new Date().getFullYear();
+const io = new IntersectionObserver(en => en.forEach(x => { if(x.isIntersecting){ x.target.classList.add("in"); io.unobserve(x.target); } }), {threshold:.12});
+document.querySelectorAll(".rv").forEach(el => io.observe(el));
+</script>
+</body>
+</html>
