@@ -1,0 +1,13 @@
+{
+  "name": "territorio-digital",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Portal estático Território Digital por Igeotecnologia",
+  "scripts": {
+    "test": "node tests/utm-regression.cjs",
+    "test:browser": "node tests/browser.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}

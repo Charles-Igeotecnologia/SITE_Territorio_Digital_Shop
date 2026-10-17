@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Território Digital · Igeotecnologia</title>
+<meta name="description" content="Território Digital: aerolevantamento com drones, LiDAR, georreferenciamento, monitoramento ambiental, WebGIS e inteligência geoespacial para a Amazônia. Por Igeotecnologia — Manaus/AM.">
+<meta name="theme-color" content="#050d18">
+<meta property="og:title" content="Território Digital · Igeotecnologia">
+<meta property="og:description" content="O território amazônico, traduzido em dados. Projetos, soluções, dados e publicações em geotecnologia.">
+<meta property="og:type" content="website">
+<link rel="canonical" href="https://territoriodigital.shop/">
+<meta property="og:url" content="https://territoriodigital.shop/">
+<meta property="og:image" content="https://territoriodigital.shop/postagens/_web/mapeamento-lidar.webp">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23050d18'/%3E%3Cpath d='M32 10 L50 52 L32 42 L14 52 Z' fill='none' stroke='%231ea7ff' stroke-width='4' stroke-linejoin='round'/%3E%3Ccircle cx='32' cy='33' r='4' fill='%2336d6c3'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body>
+
+<!-- ============ HEADER ============ -->
+<header class="site-header" id="top">
+  <nav class="nav wrap" aria-label="Principal">
+    <a href="#top" class="brand" aria-label="Território Digital — início">
+      <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+        <rect x=".5" y=".5" width="39" height="39" rx="10" fill="#0b1a2c" stroke="rgba(138,190,255,.3)"/>
+        <path d="M20 7 L31 32 L20 26 L9 32 Z" fill="none" stroke="#1ea7ff" stroke-width="2.4" stroke-linejoin="round"/>
+        <circle cx="20" cy="20.5" r="2.6" fill="#36d6c3"/>
+      </svg>
+      <span class="brand-txt"><b>Território Digital</b><small>por Igeotecnologia</small></span>
+    </a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#atuacao">Atuação</a></li>
+      <li><a href="#projetos">Projetos</a></li>
+      <li><a href="#agentico">Agêntico</a></li>
+      <li><a href="#hub">Hub de dados</a></li>
+      <li><a href="#lab">Lab</a></li>
+      <li><a href="#sobre">Sobre</a></li>
+      <li><a href="#contato">Contato</a></li>
+    </ul>
+    <div class="nav-cta">
+      <a href="#contato" class="btn btn-ghost btn-sm">Falar conosco</a>
+      <a href="#agenda" class="btn btn-primary btn-sm">Agendar conversa</a>
+      <button class="menu-btn" id="menuBtn" aria-label="Abrir menu" aria-expanded="false" aria-controls="navLinks"><span></span></button>
+    </div>
+  </nav>
+</header>
+
+<main>
+<!-- ============ HERO ============ -->
+<section class="hero" aria-label="Apresentação">
+  <canvas id="topo" aria-hidden="true"></canvas>
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">Geotecnologia · Amazônia · Manaus/AM</span>
+      <h1 style="margin-top:22px">
+        <span class="line thin">Território Digital</span>
+        <span class="line">O território</span>
+        <span class="line">amazônico,</span>
+        <span class="line"><span class="hl">em dados.</span></span>
+      </h1>
+      <p class="lead">Aerolevantamento com drones, LiDAR, georreferenciamento e inteligência geoespacial para quem decide sobre a Amazônia — da gestão pública ao campo, da floresta à cidade.</p>
+      <div class="hero-actions">
+        <a href="#agenda" class="btn btn-primary">Agendar conversa técnica
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        <a href="#projetos" class="btn btn-ghost">Ver projetos e publicações</a>
+      </div>
+      <div class="hero-meta">
+        <div><b id="mPosts">—</b><span>publicações</span></div>
+        <div><b>800+ ha</b><span>LiDAR em um só projeto</span></div>
+        <div><b>SIRGAS</b><span>2000 · alta precisão</span></div>
+        <div><b>CREA</b><span>AM 19.430</span></div>
+      </div>
+    </div>
+    <div class="stack" id="stack" aria-label="Últimas publicações"></div>
+  </div>
+  <div class="hud" aria-hidden="true">
+    <span>LAT <b id="hLat">-3.1190</b></span>
+    <span>LON <b id="hLon">-60.0217</b></span>
+    <span class="opt">DATUM <b>SIRGAS 2000</b></span>
+    <span class="opt">EQUIDISTÂNCIA <b>5 m</b></span>
+  </div>
+  <div class="north" aria-hidden="true">
+    <svg viewBox="0 0 18 28"><path d="M9 0 L17 26 L9 20 L1 26 Z" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M9 0 L9 20 L1 26 Z" fill="currentColor"/></svg>N
+  </div>
+</section>
+
+<!-- ============ TICKER ============ -->
+<div class="ticker" aria-hidden="true">
+  <div class="ticker-track" id="ticker"></div>
+</div>
+
+<!-- ============ ÁREAS DE ATUAÇÃO ============ -->
+<section class="sec" id="atuacao" aria-labelledby="t-at">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div><span class="eyebrow">Áreas de atuação</span><h2 id="t-at">Conheça o território.<br><span class="hl">Decida com segurança.</span></h2></div>
+      <div class="at-side">
+        <p>Cada território tem uma pergunta. Escolha a sua e veja como já respondemos em campo.</p>
+        <div class="car-nav"><button id="carPrev" aria-label="Anterior"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg></button><button id="carNext" aria-label="Próximo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></button></div>
+      </div>
+    </div>
+    <div class="areas-wrap rv"><div class="areas" id="areas"></div></div>
+  </div>
+</section>
+
+<!-- ============ INDICADORES ============ -->
+<section class="sec stats-band" aria-labelledby="t-ind">
+  <div class="wrap stats-grid">
+    <div class="rv">
+      <span class="eyebrow">Dados que viram decisão</span>
+      <h2 id="t-ind" style="margin-top:16px;font-size:clamp(30px,3.6vw,48px)">Um voo de drone.<br>Uma escola planejada.</h2>
+      <p class="src" id="indSrc"></p>
+    </div>
+    <div class="stats rv" id="stats"></div>
+  </div>
+</section>
+
+<!-- ============ SOLUÇÕES ============ -->
+<section class="sec" id="solucoes" aria-labelledby="t-sol">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div><span class="eyebrow">Soluções</span><h2 id="t-sol">Do campo à<br>decisão.</h2></div>
+      <p>Integramos coleta em campo, processamento e análise para entregar informação territorial confiável — com responsabilidade técnica, normas vigentes e linguagem que o gestor entende.</p>
+    </div>
+    <div class="services rv" id="services"></div>
+  </div>
+</section>
+
+<!-- ============ PROJETOS / FEED ============ -->
+<section class="sec" id="projetos" aria-labelledby="t-proj" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div><span class="eyebrow">Projetos &amp; publicações</span><h2 id="t-proj">O que estamos<br>mapeando.</h2></div>
+      <p>Projetos executados, artigos, soluções, software e novidades. Cada publicação é um recorte real do território — atualizado continuamente.</p>
+    </div>
+    <div class="feed-bar rv">
+      <div class="chips" id="chips" role="group" aria-label="Filtrar por categoria"></div>
+      <label class="search"><span class="sr-only">Buscar publicações</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="search" id="q" placeholder="Buscar: LiDAR, estiagem, ribeirinhas…">
+      </label>
+    </div>
+    <div class="grid" id="grid" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- ============ ATLAS ============ -->
+<section class="sec" id="atlas" aria-labelledby="t-atlas" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div><span class="eyebrow">Atlas</span><h2 id="t-atlas">Onde o trabalho<br>acontece.</h2></div>
+      <p>Cada publicação georreferenciada aparece no mapa. Um atlas vivo da atuação no território amazônico.</p>
+    </div>
+    <div class="atlas rv">
+      <div class="atlas-side" id="atlasList"></div>
+      <div id="map" role="region" aria-label="Mapa de projetos"></div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============ TERRITÓRIO AGÊNTICO ============ -->
+<section class="sec agent-sec" id="agentico" aria-labelledby="t-ag2">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div><span class="eyebrow">Território Agêntico</span><h2 id="t-ag2">Governo Territorial<br><span class="ag-hl">Agêntico.</span></h2></div>
+      <p>Um modelo de gestão pública em que <b>agentes de inteligência artificial</b> trabalham continuamente sobre dados territoriais para compreender o território, antecipar demandas, apoiar decisões e recomendar ações de maior benefício para a população.</p>
+    </div>
+    <div class="vs rv">
+      <div class="vs-card"><small>Modelo tradicional</small><h3>Ação reativa</h3><p>O governo observa o território apenas quando surge um problema. Resposta tardia, fragmentada entre secretarias.</p></div>
+      <div class="vs-mid">VS</div>
+      <div class="vs-card new"><small><span class="pulse"></span>Governo territorial agêntico</small><h3>Ação preditiva</h3><p>Agentes digitais observam continuamente, antecipam demandas e recomendam ações antes mesmo da solicitação. Integrada e inteligente.</p></div>
+    </div>
+    <div class="agents rv" id="agents"></div>
+    <div class="practice rv">
+      <div><span class="eyebrow">Exemplo na prática</span><p style="margin-top:12px;color:var(--text-2);font-size:15px">Em vez de esperar que uma escola informe falta de vagas, o agente identifica o padrão e antecipa a decisão.</p></div>
+      <div class="flow"><div>Novo conjunto habitacional em construção</div><div>Aumento de crianças em idade escolar</div><div>Escolas próximas no limite da capacidade</div><div>Terreno público disponível</div></div>
+      <div class="reco"><small>Recomendação do agente</small>“Uma escola nesta localização atenderá ≈1.200 futuros estudantes e reduzirá o deslocamento médio em 18 minutos.”<em>Exemplo ilustrativo do conceito.</em></div>
+    </div>
+    <div class="infra rv"><span>Organização territorial dos dados</span><span>GeoPackage como base estruturada</span><span>WebGIS</span><span>Drones e aerofotogrametria</span><span>Demanda e capacidade escolar</span><span>Cadastro fundiário</span><span>Rotas escolares</span><span>Integração de bases entre órgãos</span></div>
+    <div class="ag-cta rv">
+      <button class="btn btn-agent" data-open="territorio-agentico">Ler o conceito completo</button>
+      <button class="btn btn-ghost" data-req="Software / WebGIS / IA">Levar para o meu município</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HUB DE DADOS PÚBLICOS ============ -->
+<section class="sec" id="hub" aria-labelledby="t-hub">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div><span class="eyebrow">Hub de dados públicos</span><h2 id="t-hub">Dados oficiais,<br><span class="hl">prontos para a prancha.</span></h2></div>
+      <p>As principais fontes governamentais de dados geoespaciais, organizadas por tema, com formato e dica de uso. Monte a lista de fontes do seu mapa, gere a citação pronta e confira o sistema de referência no kit cartográfico.</p>
+    </div>
+    <div class="feed-bar rv">
+      <div class="chips" id="hubChips" role="group" aria-label="Filtrar fontes por tema"></div>
+      <label class="search"><span class="sr-only">Buscar fontes</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="search" id="hubQ" placeholder="Buscar: limites, CAR, hidrografia, Sentinel…">
+      </label>
+    </div>
+    <div class="hub-gov">
+      <div class="src-grid" id="srcGrid" aria-live="polite"></div>
+      <aside class="side" aria-label="Ferramentas cartográficas">
+        <div class="box">
+          <h3>Minha prancha <small id="pCount">0 fontes</small></h3>
+          <p class="hint">Marque “+ Prancha” nas fontes que usou. O texto de fontes do mapa é montado aqui.</p>
+          <div class="cite" id="pCite">Nenhuma fonte selecionada.</div>
+          <div class="mini-btns"><button class="btn btn-primary btn-sm" id="pCopy">Copiar texto</button><button class="btn btn-ghost btn-sm" id="pClear">Limpar</button></div>
+        </div>
+        <div class="box">
+          <h3>Kit cartográfico <small>SIRGAS 2000</small></h3>
+          <p class="hint">Coordenada geográfica → fuso UTM, EPSG e coordenadas planas.</p>
+          <div class="row2"><label>Latitude<input id="uLat" inputmode="decimal" value="-3.1190"></label><label>Longitude<input id="uLon" inputmode="decimal" value="-60.0217"></label></div>
+          <div class="utm-out" id="uOut"></div>
+        </div>
+        <div class="box">
+          <h3>Checklist do mapa <small id="cCount">0/10</small></h3>
+          <ul class="check" id="check"></ul>
+          <div class="bar"><i id="cBar"></i></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DADOS ============ -->
+<section class="sec hub" id="dados" aria-labelledby="t-dados">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div><span class="eyebrow">Acervo próprio</span><h2 id="t-dados">Território Digital<br><span class="hl">Amazônico.</span></h2></div>
+      <p>Além dos dados públicos, um acervo em construção de bases geoespaciais levantadas em campo na Amazônia para pesquisadores, consultores, órgãos públicos e empresas. Solicite acesso, licenciamento ou produtos sob demanda.</p>
+    </div>
+    <div class="datasets rv" id="datasets"></div>
+    <div class="hub-cta rv">
+      <h3>Precisa de um dado que ainda não existe? <span class="hl">A gente vai a campo.</span></h3>
+      <div class="hero-actions">
+        <button class="btn btn-primary" data-req="Produto sob demanda">Solicitar dados sob demanda</button>
+        <a href="#agenda" class="btn btn-ghost">Agendar demonstração</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LAB ============ -->
+<section class="sec" id="lab" aria-labelledby="t-lab">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div><span class="eyebrow">Lab · software &amp; IA</span><h2 id="t-lab">Geotecnologia<br>que vira produto.</h2></div>
+      <p>Desenvolvemos ferramentas que colocam o dado espacial nas mãos de quem decide: WebGIS, painéis, automações e modelos de IA aplicados à imagem e ao território.</p>
+    </div>
+    <div class="vitrine rv" id="vitrine"></div>
+    <div class="lab rv" id="labGrid"></div>
+  </div>
+</section>
+
+<!-- ============ MÉTODO ============ -->
+<section class="sec" aria-labelledby="t-met" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div><span class="eyebrow">Método</span><h2 id="t-met">Como entregamos.</h2></div>
+      <p>Um fluxo rastreável, do planejamento de voo ao relatório técnico assinado.</p>
+    </div>
+    <div class="steps rv">
+      <div class="step"><h3>Diagnóstico</h3><p>Escopo, área de interesse, precisão exigida, normas aplicáveis e plano de voo/campo.</p></div>
+      <div class="step"><h3>Campo</h3><p>Voo com drone RTK/LiDAR, pontos de apoio GNSS, rastreamento e coleta em áreas remotas.</p></div>
+      <div class="step"><h3>Processamento</h3><p>Ortomosaicos, nuvens de pontos, MDT/MDS, vetorização e controle de qualidade posicional.</p></div>
+      <div class="step"><h3>Entrega</h3><p>Relatórios, peças técnicas, bases SIG, WebGIS e painéis prontos para decisão.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CREDENCIAIS ============ -->
+<section class="sec" id="sobre" aria-labelledby="t-cred" style="padding-top:0">
+  <div class="wrap creds">
+    <div class="rv">
+      <span class="eyebrow">Credenciais</span>
+      <h2 id="t-cred" style="margin-top:16px">Responsabilidade<br>técnica.</h2>
+      <p class="lead" style="margin-top:20px">Equipe liderada por geógrafo e geomensor com atuação em gestão pública, perícia judicial e aerolevantamento na Amazônia.</p>
+      <div class="norms">
+        <span>SIRGAS 2000</span><span>Norma Técnica INCRA · SIGEF</span><span>ABNT NBR 13.133</span><span>REURB · Lei 13.465/2017</span><span>ANAC · DECEA</span><span>INDE · ET-EDGV</span>
+      </div>
+      <p class="quote">“Conhecer o território para construir soluções reais.”</p>
+    </div>
+    <div class="cred-list rv">
+      <div class="cred"><span>Geógrafo e Geomensor</span><b>CREA-AM 19.430</b></div>
+      <div class="cred"><span>Perito Judicial Nomeado (Ad Hoc)</span><b>TJAM</b></div>
+      <div class="cred"><span>Piloto profissional de RPAS</span><b>Drone · LiDAR</b></div>
+      <div class="cred"><span>Esp. Geoprocessamento</span><b>PUC-MG</b></div>
+      <div class="cred"><span>Esp. Georreferenciamento de Imóveis</span><b>PUC-GO</b></div>
+      <div class="cred"><span>Aerofotogrametria e SIG</span><b>Especialização</b></div>
+      <div class="cred"><span>Analytics e Business Intelligence</span><b>PUC-MG</b></div>
+      <div class="cred"><span>Cleber Mota Damasceno · Engenheiro Florestal</span><b>CREA-AM 2959-D</b></div>
+      <div class="cred"><span>Igeotecnologia · Soluções Geoespaciais e Engenharia Ltda.</span><b>CNPJ 54.678.405/0001-02</b></div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============ PARCEIROS ============ -->
+<section class="sec" id="parceiros" aria-labelledby="t-parc" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div><span class="eyebrow">Rede de parceiros</span><h2 id="t-parc">Ninguém mapeia<br>a Amazônia sozinho.</h2></div>
+      <p>Equipamentos, especialidades e experiência de campo somados em uma rede que cobre do levantamento topográfico ao LiDAR aerotransportado.</p>
+    </div>
+    <div class="partners rv" id="partners"></div>
+  </div>
+</section>
+
+<!-- ============ AGENDA ============ -->
+<section class="sec" id="agenda" aria-labelledby="t-ag" style="padding-top:0">
+  <div class="wrap">
+    <div class="panel book rv">
+      <div>
+        <span class="eyebrow">Agendamento</span>
+        <h2 id="t-ag" style="margin-top:16px">Agende e vamos<br><span class="hl">mapear o seu território.</span></h2>
+        <p class="lead" style="margin-top:16px;font-size:17px">Escolha a área técnica, o formato e sugira data e horário. O pedido vai direto para o e-mail do setor responsável. Confirmamos em até 1 dia útil.</p>
+        <div class="types" role="radiogroup" aria-label="Tipo de atendimento" id="types"></div>
+      </div>
+      <div id="agendaArea">
+        <form class="form" id="bookForm" novalidate>
+          <div class="field"><span style="font-size:13.5px;font-weight:500;color:var(--text-2)" id="setLbl">Área técnica</span>
+            <div class="setores" id="bSet" role="radiogroup" aria-labelledby="setLbl"></div></div>
+          <div class="row">
+            <div class="field"><label for="bDate">Data preferida</label><input type="date" id="bDate" required><span class="err" id="eDate"></span></div>
+            <div class="field"><label for="bMode">Formato</label>
+              <select id="bMode"><option>Online (Google Meet)</option><option>Presencial · Manaus</option><option>Telefone / WhatsApp</option></select></div>
+          </div>
+          <div class="field"><span style="font-size:13.5px;font-weight:500;color:var(--text-2)" id="slotLbl">Horário (Manaus, UTC−4)</span>
+            <div class="slots" id="slots" role="group" aria-labelledby="slotLbl"></div><span class="err" id="eSlot"></span></div>
+          <div class="row">
+            <div class="field"><label for="bName">Nome</label><input id="bName" autocomplete="name" required><span class="err" id="eName"></span></div>
+            <div class="field"><label for="bOrg">Organização</label><input id="bOrg" autocomplete="organization" placeholder="Prefeitura, empresa, pesquisa…"></div>
+          </div>
+          <div class="row">
+            <div class="field"><label for="bMail">Seu e-mail</label><input id="bMail" type="email" autocomplete="email" placeholder="para recebermos a confirmação"></div>
+            <div class="field"><label for="bLocal">Local / município da área</label><input id="bLocal" placeholder="Ex.: Iranduba – AM, ramal do Cacau"></div>
+          </div>
+          <div class="field"><label for="bTopic">Assunto</label><textarea id="bTopic" rows="3" placeholder="Ex.: levantamento LiDAR de 120 ha em Rio Preto da Eva"></textarea></div>
+          <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+            <button class="btn btn-primary" type="submit" data-via="email">Enviar por e-mail ao setor</button>
+            <button class="btn btn-ghost" type="submit" data-via="wa">Enviar pelo WhatsApp</button>
+          </div>
+          <div class="note" id="bDest"></div>
+          <div class="ok-box" id="bookOk" role="status"></div>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CONTATO ============ -->
+<section class="sec" id="contato" aria-labelledby="t-ct" style="padding-top:0">
+  <div class="wrap contact">
+    <div class="rv">
+      <span class="eyebrow">Contato</span>
+      <h2 id="t-ct" style="margin-top:16px">Fale com a<br><span class="hl">equipe técnica.</span></h2>
+      <div class="channels" id="channels"></div>
+    </div>
+    <div class="panel rv">
+      <form class="form" id="ctForm" novalidate>
+        <div class="row">
+          <div class="field"><label for="cName">Nome</label><input id="cName" autocomplete="name" required><span class="err" id="ecName"></span></div>
+          <div class="field"><label for="cMail">E-mail</label><input id="cMail" type="email" autocomplete="email" required><span class="err" id="ecMail"></span></div>
+        </div>
+        <div class="row">
+          <div class="field"><label for="cOrg">Organização</label><input id="cOrg" autocomplete="organization"></div>
+          <div class="field"><label for="cSet">Área técnica</label><select id="cSet"></select></div>
+          </div><div class="row">
+          <div class="field"><label for="cType">Interesse</label>
+            <select id="cType"><option>Orçamento de serviço</option><option>Acesso a dados</option><option>Parceria / pesquisa</option><option>Perícia técnica</option><option>Software / WebGIS / IA</option><option>Imprensa / divulgação</option><option>Outro</option></select></div>
+        </div>
+        <div class="field"><label for="cMsg">Mensagem</label><textarea id="cMsg" rows="5" required placeholder="Conte o objetivo, a área (município/coordenadas) e o prazo."></textarea><span class="err" id="ecMsg"></span></div>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+          <button class="btn btn-primary" type="submit" id="ctBtn">Enviar mensagem</button>
+          <span class="note" id="ctNote"></span>
+        </div>
+        <div class="ok-box" id="ctOk" role="status"></div>
+      </form>
+    </div>
+  </div>
+</section>
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <a href="#top" class="brand">
+          <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true"><rect x=".5" y=".5" width="39" height="39" rx="10" fill="#0b1a2c" stroke="rgba(138,190,255,.3)"/><path d="M20 7 L31 32 L20 26 L9 32 Z" fill="none" stroke="#1ea7ff" stroke-width="2.4" stroke-linejoin="round"/><circle cx="20" cy="20.5" r="2.6" fill="#36d6c3"/></svg>
+          <span class="brand-txt"><b>Território Digital</b><small>por Igeotecnologia</small></span>
+        </a>
+        <p>Territórios que conectam pessoas e oportunidades. Soluções geoespaciais e engenharia a partir de Manaus, para toda a Amazônia.</p>
+      </div>
+      <div><h4>Navegação</h4><ul><li><a href="#solucoes">Soluções</a></li><li><a href="#projetos">Projetos</a></li><li><a href="#atlas">Atlas</a></li><li><a href="#agentico">Território Agêntico</a></li><li><a href="#hub">Hub de dados públicos</a></li><li><a href="#dados">Acervo próprio</a></li><li><a href="#parceiros">Parceiros</a></li></ul></div>
+      <div><h4>Atendimento</h4><ul><li><a href="#agenda">Agendar conversa</a></li><li><a href="#contato">Orçamento</a></li><li><a href="#dados" data-req="Acesso a dados">Acesso a dados</a></li></ul></div>
+      <div><h4>Contato</h4><ul id="footContact"></ul></div>
+    </div>
+    <div class="legal">
+      <span>© <span id="yr"></span> Igeotecnologia · Soluções Geoespaciais e Engenharia Ltda. · CNPJ 54.678.405/0001-02</span>
+      <span>Manaus – AM · Amazônia · Brasil</span>
+    </div>
+  </div>
+</footer>
+
+<a class="wa-float" id="waFloat" target="_blank" rel="noopener" aria-label="Conversar no WhatsApp">
+  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.8-.9-2-1-.3-.1-.5-.1-.7.1-.2.3-.8 1-.9 1.2-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6l.4-.5c.2-.2.2-.3.3-.5.1-.2 0-.4 0-.5l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4.2-.7.2-1.3.2-1.4-.1-.1-.3-.2-.6-.3zM12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.3c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.3 8.3 0 1 1 12 20.3z"/></svg>
+</a>
+
+<dialog class="reader" id="reader" aria-labelledby="rTitle">
+  <div class="reader-in" style="position:relative">
+    <button class="reader-close" id="rClose" aria-label="Fechar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    <div class="reader-img"><img id="rImg" alt=""></div>
+    <div class="reader-txt">
+      <div class="card-meta mono" id="rMeta" style="font-size:12px;color:var(--muted);letter-spacing:.06em"></div>
+      <h2 id="rTitle"></h2>
+      <div id="rBody" style="display:grid;gap:14px"></div>
+      <div class="reader-tags" id="rTags"></div>
+      <div class="reader-actions" id="rActions"></div>
+    </div>
+  </div>
+</dialog>
+
+<script src="assets/js/content.js"></script>
+<script src="assets/vendor/leaflet/leaflet.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
